@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+app/node_modules/
+
+# Build artifacts
+dist/
+dist-ssr/
+app/dist/
+app/src-tauri/target/
+target/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.sw?
+
+# Local runtime data
+*.local
+.loop-log
