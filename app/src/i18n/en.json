@@ -398,7 +398,7 @@
     "detectedAgents": "Detected",
     "enabledAgents": "Enabled",
     "customAgents": "Custom",
-    "builtInAgents": "Built-in Agents",
+    "builtInAgents": "Popular Agents",
     "moreAgentsSection": "More Agents ({{count}})",
     "customAgentsSection": "Custom Agents",
     "refresh": "Refresh",

@@ -94,14 +94,14 @@ tools.filter(t => t.installed && t.enabled && t.category === config.category)
   可逆、只影响本机。
 - **硬删除**：改 `default_tool_adapters()` 源码。进 git、影响所有人、需重新编译。
 
-## 设置页的「内建 Agent」/「更多 Agent」分组（另一维度）
+## 设置页的「热门 Agent」/「更多 Agent」分组（另一维度）
 
 这两栏是**设置页里的视觉排版**，与上面的三层过滤**无关**。划分依据是一份
 写死的「主流名单」`MAINSTREAM_AGENT_KEYS`（`app/src/views/Settings.tsx:66`）。
 
 | 分组 | i18n key | 含义 |
 |---|---|---|
-| **内建 Agent** | `settings.builtInAgents` | 在主流名单里的 13 个，摆前面 |
+| **热门 Agent** | `settings.builtInAgents` | 在主流名单里的 13 个，摆前面 |
 | **更多 Agent（N）** | `settings.moreAgentsSection` | 不在名单里的其余，折叠在后 |
 
 代码（`Settings.tsx:733/737`）：
@@ -114,13 +114,13 @@ secondaryTools = builtInTools.filter(t => !MAINSTREAM_AGENT_KEYS.has(t.key))
 github_copilot, opencode, hermes, openclaw, windsurf, kiro, antigravity, amp`。
 
 **注意**：每一栏里都可能同时有「已安装」和「未安装」的 Agent——分组只决定
-排在哪栏，不决定装没装。例如 Cursor 在「内建 Agent」栏但标「未安装」。
+排在哪栏，不决定装没装。例如 Cursor 在「热门 Agent」栏但标「未安装」。
 
 ## 三个维度对照表（避免混淆）
 
 | 维度 | 由谁决定 | 影响什么 | 存储 |
 |---|---|---|---|
-| 内建 / 更多（分组栏） | `MAINSTREAM_AGENT_KEYS` | 仅设置页排版位置 | 前端写死 |
+| 热门 / 更多（分组栏） | `MAINSTREAM_AGENT_KEYS` | 仅设置页排版位置 | 前端写死 |
 | 已安装 / 未安装 | home 下有无探测目录 | 全局工作区显不显示 + 设置页标注 | 文件系统 |
 | 启用 / 禁用 | `disabled_tools` 名单（UI 开关） | 全局工作区显不显示 | SQLite（本机） |
 | Coding / Lobster | `ToolAdapter.category` | 分到哪个工作区页面 | 内置定义 |
