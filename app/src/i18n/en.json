@@ -621,6 +621,7 @@
     "success": "Operation successful",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "back": "Back",
     "delete": "Delete",
     "rename": "Rename",
     "save": "Save",

@@ -951,6 +951,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           ) : null
         }
         onClose={() => setLocalDetailSkill(null)}
+        onBack={() => setLocalDetailSkill(null)}
+        backLabel={t("common.back")}
       >
         {localDetailSkill?.center_skill_id && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
