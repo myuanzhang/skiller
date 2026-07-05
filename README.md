@@ -27,9 +27,14 @@ skiller/
 ```bash
 cd app
 npm install
+export PATH="$HOME/.cargo/bin:$PATH"
+export CARGO_TARGET_DIR="/tmp/skiller-target"   # 本机需绕开构建限制，见 docs/BUILD.md
 npm run tauri:dev    # 启动桌面 GUI（开发模式）
 npm run cli -- --help # 运行 CLI
 ```
+
+> 本机构建 `.rlib` 时会遇到 `Operation not permitted` 报错（安全软件拦截），
+> 绕过方法与产物路径见 [`docs/BUILD.md`](docs/BUILD.md)。
 
 ## 与上游同步
 

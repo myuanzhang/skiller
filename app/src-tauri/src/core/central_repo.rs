@@ -57,13 +57,13 @@ struct RepoPathConfig {
 fn default_base_dir() -> PathBuf {
     dirs::home_dir()
         .expect("Cannot determine home directory")
-        .join(".skills-manager")
+        .join(".skiller")
 }
 
 fn config_file_path() -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(default_base_dir)
-        .join("skills-manager")
+        .join("skiller")
         .join(CONFIG_FILE_NAME)
 }
 
@@ -293,7 +293,7 @@ pub fn logs_dir() -> PathBuf {
 }
 
 pub fn db_path() -> PathBuf {
-    base_dir().join("skills-manager.db")
+    base_dir().join("skiller.db")
 }
 
 pub fn set_base_dir_override(path: Option<String>) -> Result<PathBuf> {

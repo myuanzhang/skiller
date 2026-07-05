@@ -13,8 +13,8 @@ use clap::{Args, Parser, Subcommand};
 use serde::Serialize;
 
 #[derive(Parser, Debug)]
-#[command(name = "skills-manager-cli")]
-#[command(about = "Shared-core CLI for skills-manager", version)]
+#[command(name = "skiller-cli")]
+#[command(about = "Shared-core CLI for skiller", version)]
 struct Cli {
     #[arg(long, global = true)]
     json: bool,

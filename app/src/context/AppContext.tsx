@@ -34,7 +34,7 @@ interface AppState {
   closeSkillDetail: () => void;
 }
 
-const VIEWED_PRESET_LS_KEY = "skills-manager.viewedPresetId";
+const VIEWED_PRESET_LS_KEY = "skiller.viewedPresetId";
 const LEGACY_VIEWED_PRESET_LS_KEY = "skills-manager.viewedScenarioId";
 
 const AppContext = createContext<AppState | null>(null);

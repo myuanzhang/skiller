@@ -63,7 +63,7 @@ pub struct ScenarioSkillMetaFile {
 }
 
 pub fn metadata_dir() -> PathBuf {
-    central_repo::skills_dir().join(".skills-manager")
+    central_repo::skills_dir().join(".skiller")
 }
 
 pub fn metadata_exists() -> bool {
@@ -256,7 +256,7 @@ fn write_schema() -> Result<()> {
     let schema = SchemaFile {
         schema_version: SCHEMA_VERSION,
         app_min_version: APP_MIN_VERSION.to_string(),
-        created_by: "skills-manager".to_string(),
+        created_by: "skiller".to_string(),
     };
     atomic_write_json(&metadata_dir().join("schema.json"), &schema)
 }
@@ -463,7 +463,7 @@ fn central_repo_has_valid_skill_dirs() -> Result<bool> {
         .into_iter()
         .filter_entry(|entry| {
             let name = entry.file_name().to_string_lossy();
-            name != ".git" && name != ".skills-manager"
+            name != ".git" && name != ".skiller"
         })
     {
         let entry = entry?;

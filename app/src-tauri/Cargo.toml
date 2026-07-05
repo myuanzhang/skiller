@@ -1,12 +1,12 @@
 [package]
-name = "skills-manager"
+name = "skiller"
 version = "1.0.0"
-description = "Skills Manager - AI Agent Skills Central Manager"
+description = "Skiller - AI Agent Skills Central Manager"
 authors = ["tianliang"]
 license = "MIT"
 edition = "2021"
 rust-version = "1.77.2"
-default-run = "skills-manager"
+default-run = "skiller"
 
 [lib]
 name = "app_lib"

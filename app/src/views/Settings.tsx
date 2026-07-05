@@ -50,7 +50,6 @@ import { toast } from "sonner";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { listen } from "@tauri-apps/api/event";
 import { writeText as clipboardWriteText } from "@tauri-apps/plugin-clipboard-manager";
-import { check as checkUpdater } from "@tauri-apps/plugin-updater";
 import { open as dialogOpen, confirm as dialogConfirm } from "@tauri-apps/plugin-dialog";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
@@ -183,7 +182,7 @@ export function Settings() {
   const [savingCentralRepoPath, setSavingCentralRepoPath] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
-  const [installing, setInstalling] = useState(false);
+  const [installing] = useState(false);
   const [gitRemoteInput, setGitRemoteInput] = useState("");
   const [gitRemoteSaving, setGitRemoteSaving] = useState(false);
   const [gitRemoteDisconnecting, setGitRemoteDisconnecting] = useState(false);
@@ -207,7 +206,7 @@ export function Settings() {
   const [addingCustom, setAddingCustom] = useState(false);
   const [showMoreAgents, setShowMoreAgents] = useState(false);
 
-  const GITHUB_URL = "https://github.com/xingkongliang/skills-manager";
+  const GITHUB_URL = "https://github.com/myuanzhang/skiller";
 
   const startEditPath = useCallback((key: string, currentPath: string) => {
     setEditingPathKey(key);
@@ -574,7 +573,7 @@ export function Settings() {
             enabledCustomCount > 0 ? `${enabledCustomCount} custom` : "",
           ].filter(Boolean).join(", ");
       const parts = [
-        "**Diagnostics** (auto-collected by Skills Manager)",
+        "**Diagnostics** (auto-collected by Skiller)",
         "",
         `- App version: \`${info.app_version}\``,
         `- OS: \`${info.os} ${info.os_version} (${info.arch})\``,
@@ -663,23 +662,9 @@ export function Settings() {
   };
 
   const handleAutoUpdate = async () => {
-    setInstalling(true);
-    try {
-      const update = await checkUpdater();
-      if (update) {
-        toast.info(t("settings.installing"));
-        await update.downloadAndInstall();
-        toast.success(t("settings.restartToApply"));
-      } else {
-        toast.success(t("settings.noUpdate"));
-      }
-    } catch {
-      toast.error(t("settings.updateError"));
-      if (updateInfo?.release_url) {
-        await openUrl(updateInfo.release_url);
-      }
-    } finally {
-      setInstalling(false);
+    // Auto-update is disabled in this build; direct users to the release page.
+    if (updateInfo?.release_url) {
+      await openUrl(updateInfo.release_url);
     }
   };
 

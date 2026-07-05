@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Skills Manager"
+    "name": "Skiller"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -16,7 +16,7 @@
   },
   "help": {
     "eyebrow": "Guide",
-    "title": "Quick Start for Skills Manager",
+    "title": "Quick Start for Skiller",
     "description": "Fastest path: install skills → open Global Workspace → click a Preset pill to activate. Press ⌘K anytime for the command palette. Use Project Workspaces, Git backup, and Settings as needed.",
     "items": {
       "workflows": {
@@ -37,7 +37,7 @@
       },
       "global": {
         "title": "Global Workspace",
-        "description": "Each agent gets its own page listing every skill in its global folder — including ones installed outside Skills Manager — so the view matches what the agent actually sees. Use + Add Skills to pull from your central library with inline target-agent chips, or use the All Agents overview to manage every installed agent at once. Skills that only exist in an agent folder can be deleted directly from the card."
+        "description": "Each agent gets its own page listing every skill in its global folder — including ones installed outside Skiller — so the view matches what the agent actually sees. Use + Add Skills to pull from your central library with inline target-agent chips, or use the All Agents overview to manage every installed agent at once. Skills that only exist in an agent folder can be deleted directly from the card."
       },
       "projects": {
         "title": "Project Workspaces",
@@ -472,7 +472,7 @@
     "language": "Language",
     "help": "Help",
     "about": "About",
-    "version": "Skills Manager 1.25.2",
+    "version": "Skiller 1.25.2",
     "tagline": "Cross-platform. Minimal, efficient, seamless multi-preset switching.",
     "checkUpdate": "Check for Updates",
     "checking": "Checking…",
@@ -492,9 +492,9 @@
     "exportLogsHint": "Bundle recent logs and activity history as a zip in your Downloads folder",
     "exportLogsDone": "Logs exported ({{count}} file(s)). Drag the zip into your GitHub issue.",
     "exportLogsFailed": "Failed to export logs.",
-    "panicBanner": "Skills Manager crashed during the last session ({{time}}).",
-    "repoWarning_config_unreadable": "The central library config file is unreadable or corrupt, so this session fell back to the default location (~/.skills-manager). If your library looks empty, your data is still at the previously configured path — set “Central Repo Path” back to it.",
-    "repoWarning_repo_path_invalid": "The configured central repository path is invalid, so this session fell back to the default location (~/.skills-manager). If your library looks empty, re-set “Central Repo Path” to where your data lives.",
+    "panicBanner": "Skiller crashed during the last session ({{time}}).",
+    "repoWarning_config_unreadable": "The central library config file is unreadable or corrupt, so this session fell back to the default location (~/.skiller). If your library looks empty, your data is still at the previously configured path — set “Central Repo Path” back to it.",
+    "repoWarning_repo_path_invalid": "The configured central repository path is invalid, so this session fell back to the default location (~/.skiller). If your library looks empty, re-set “Central Repo Path” to where your data lives.",
     "panicDismiss": "Dismiss",
     "gitBackup": "Git Sync",
     "gitBackupDesc": "Back up your skill library to a Git repository for version control and multi-machine sync.",
