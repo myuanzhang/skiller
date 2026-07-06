@@ -1,0 +1,21 @@
+app/LICENSE
+  s_9608ed98362920::t_454767c4a256d1 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "5c5711f3337a1e76487568dce13883864cea228b",
+  "prompts": {},
+  "sessions": {
+    "s_9608ed98362920": {
+      "agent_id": {
+        "tool": "trae-cue",
+        "id": "ai_tab-icr-1ad80eb3-2687-4a8f-8f5b-ad8367557249",
+        "model": "default"
+      },
+      "human_author": "Miles <mrzhangmy1@gmail.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
