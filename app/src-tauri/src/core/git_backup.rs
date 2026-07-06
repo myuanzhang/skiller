@@ -556,7 +556,7 @@ pub fn clone_into(skills_dir: &Path, url: &str) -> Result<()> {
 /// otherwise silently absorb its contents.
 ///
 /// The check runs inside the same `RepoLock` as the clone, so any other
-/// skills-manager process attempting to populate the target between check
+/// skiller process attempting to populate the target between check
 /// and clone is serialized.
 pub fn clone_into_strict(skills_dir: &Path, url: &str) -> Result<()> {
     let _lock = RepoLock::acquire_foreground("git clone")?;

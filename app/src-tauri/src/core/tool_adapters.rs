@@ -191,7 +191,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             // Codex CLI reads user-level skills from `~/.codex/skills/` and
             // project-level skills from `<repo>/.codex/skills/`. The shared
             // `~/.agents/skills` location is kept as a discovery fallback so
-            // skills synced there by other adapters (or by older skills-manager
+            // skills synced there by other adapters (or by older app
             // versions that deployed Codex there by mistake) still surface in
             // the Codex tab.
             //
