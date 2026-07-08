@@ -17,6 +17,7 @@ export default {
         'border-subtle': 'var(--color-border-subtle)',
         accent: {
           DEFAULT: 'var(--color-accent)',
+          hover: 'var(--color-accent-hover)',
           light: 'var(--color-accent-light)',
           dark: 'var(--color-accent-dark)',
           bg: 'var(--color-accent-bg)',
