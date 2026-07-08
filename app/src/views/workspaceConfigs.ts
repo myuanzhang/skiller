@@ -12,6 +12,8 @@ export interface WorkspaceConfig {
   i18nKeys: {
     /** Heading shown on the "all agents" overview page. */
     title: string;
+    /** Label of the "all agents" overview entry; used as the overview heading. */
+    allAgentsTitle: string;
     /** Heading shown when no agents in this category are installed. */
     noAgents: string;
     /** Hint shown under the no-agents heading. */
@@ -24,6 +26,7 @@ export const CODING_WORKSPACE_CONFIG: WorkspaceConfig = {
   basePath: "/global-workspace",
   i18nKeys: {
     title: "globalWorkspace.title",
+    allAgentsTitle: "globalWorkspace.allAgents",
     noAgents: "globalWorkspace.noAgents",
     noAgentsHint: "globalWorkspace.noAgentsHint",
   },
@@ -34,6 +37,7 @@ export const LOBSTER_WORKSPACE_CONFIG: WorkspaceConfig = {
   basePath: "/lobster-workspace",
   i18nKeys: {
     title: "lobsterWorkspace.title",
+    allAgentsTitle: "lobsterWorkspace.allAgents",
     noAgents: "lobsterWorkspace.noAgents",
     noAgentsHint: "lobsterWorkspace.noAgentsHint",
   },

@@ -769,7 +769,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
         ToolAdapter {
             key: "workbuddy".into(),
             display_name: "WorkBuddy".into(),
-            relative_skills_dir: ".workbuddy/skills-marketplace/skills".into(),
+            relative_skills_dir: ".workbuddy/skills".into(),
             relative_detect_dir: ".workbuddy".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,

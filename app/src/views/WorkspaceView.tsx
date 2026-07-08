@@ -213,11 +213,12 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const { agentKey } = useParams<{ agentKey?: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { tools, managedSkills, presets, refreshManagedSkills, refreshTools } = useApp();
+  const { tools, managedSkills, presets, refreshManagedSkills, refreshTools, workspaceCloseSignal } = useApp();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
   const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<ProjectSkill["sync_status"] | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [removingLocalSkillId, setRemovingLocalSkillId] = useState<string | null>(null);
   const [localSkills, setLocalSkills] = useState<ProjectSkill[]>([]);
@@ -326,7 +327,20 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     setPullConfirmSkill(null);
     setDeleteLocalConfirmSkill(null);
     setTagFilters(new Set());
+    setStatusFilter(null);
   }, [currentTool?.key]);
+
+  // Close the skill detail when a workspace nav item is clicked, even if the
+  // route (agentKey) doesn't change — e.g. clicking the current agent or the
+  // "All Agents" entry while a detail sheet is open. The initial mount is
+  // skipped so opening a workspace fresh doesn't force-close anything.
+  const workspaceCloseSeenRef = useRef(workspaceCloseSignal);
+  useEffect(() => {
+    if (workspaceCloseSeenRef.current === workspaceCloseSignal) return;
+    workspaceCloseSeenRef.current = workspaceCloseSignal;
+    localDetailRequestRef.current += 1;
+    setLocalDetailSkill(null);
+  }, [workspaceCloseSignal]);
 
   const agentSkills = useMemo(
     () =>
@@ -365,6 +379,9 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           const matchTag = skill.tags.some((tag) => tagFilters.has(tag));
           if (!matchUntagged && !matchTag) return false;
         }
+        if (statusFilter !== null && skill.sync_status !== statusFilter) {
+          return false;
+        }
         return true;
       })
       .sort((a, b) => {
@@ -380,7 +397,21 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           a.name.localeCompare(b.name)
         );
       });
-  }, [localSkills, search, tagFilters]);
+  }, [localSkills, search, tagFilters, statusFilter]);
+
+  // Sync statuses actually present for this agent, ordered like the sort
+  // priority above, so the filter row only offers relevant buttons.
+  const presentStatuses = useMemo(() => {
+    const order: ProjectSkill["sync_status"][] = [
+      "project_only",
+      "project_newer",
+      "diverged",
+      "center_newer",
+      "in_sync",
+    ];
+    const present = new Set(localSkills.map((s) => s.sync_status));
+    return order.filter((status) => present.has(status));
+  }, [localSkills]);
 
   const inSyncLocalCount = useMemo(
     () => localSkills.filter((skill) => skill.sync_status === "in_sync").length,
@@ -660,7 +691,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
             <div className="min-w-0 flex-1">
               <h1 className="app-page-title flex items-center gap-2.5">
                 <Globe className="h-5 w-5 text-accent" />
-                {t(config.i18nKeys.title)}
+                {t(config.i18nKeys.allAgentsTitle)}
                 <span className="app-badge">{installedTools.length}</span>
               </h1>
             </div>
@@ -786,6 +817,48 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           </div>
         </div>
 
+        {presentStatuses.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[12px] text-muted">{t("globalWorkspace.localSkills.statusFilter")}</span>
+            <button
+              onClick={() => setStatusFilter(null)}
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
+                statusFilter === null
+                  ? "bg-accent text-white dark:bg-accent dark:text-white"
+                  : "bg-surface-hover text-muted hover:text-secondary"
+              )}
+            >
+              {t("globalWorkspace.localSkills.allStatus")}
+            </button>
+            {presentStatuses.map((status) => {
+              const meta = getLocalStatusMeta(t, status);
+              const active = statusFilter === status;
+              // `localOnly` shares `bg-surface-hover` with the unselected pill
+              // style, so its selected state is invisible. Give it a distinct
+              // high-contrast highlight instead of reusing the status color.
+              const activeClass =
+                status === "project_only"
+                  ? "bg-[var(--color-text-primary)] text-[var(--color-bg)]"
+                  : meta.className;
+              return (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter((prev) => (prev === status ? null : status))}
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
+                    active
+                      ? cn(activeClass, "ring-1 ring-inset ring-border")
+                      : "bg-surface-hover text-muted hover:text-secondary"
+                  )}
+                >
+                  {meta.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {allLocalTags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[12px] text-muted">{t("mySkills.tags.filter")}</span>
@@ -806,16 +879,15 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 <button
                   onClick={() => {
                     setTagFilters((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(UNTAGGED_FILTER)) next.delete(UNTAGGED_FILTER);
-                      else next.add(UNTAGGED_FILTER);
-                      return next;
+                      // "Untagged" is mutually exclusive with real tags.
+                      if (prev.has(UNTAGGED_FILTER)) return new Set();
+                      return new Set([UNTAGGED_FILTER]);
                     });
                   }}
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
                     isActive
-                      ? "bg-surface-active text-primary"
+                      ? "bg-accent text-white dark:bg-accent dark:text-white"
                       : "border border-dashed border-border text-muted hover:text-secondary"
                   )}
                   title={t("mySkills.tags.untagged")}
@@ -833,8 +905,12 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                   onClick={() => {
                     setTagFilters((prev) => {
                       const next = new Set(prev);
-                      if (next.has(tag)) next.delete(tag);
-                      else next.add(tag);
+                      if (next.has(tag)) {
+                        next.delete(tag);
+                      } else {
+                        next.delete(UNTAGGED_FILTER);
+                        next.add(tag);
+                      }
                       return next;
                     });
                   }}

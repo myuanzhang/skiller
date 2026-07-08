@@ -32,6 +32,11 @@ interface AppState {
   closeHelp: () => void;
   openSkillDetailById: (skillId: string) => void;
   closeSkillDetail: () => void;
+  /** Monotonic counter bumped when a workspace nav item is clicked. Views like
+   *  WorkspaceView watch it to close an open skill detail even when the route
+   *  (agentKey) doesn't change. */
+  workspaceCloseSignal: number;
+  requestWorkspaceClose: () => void;
 }
 
 const VIEWED_PRESET_LS_KEY = "skiller.viewedPresetId";
@@ -56,6 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [appError, setAppError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [detailSkillId, setDetailSkillId] = useState<string | null>(null);
+  const [workspaceCloseSignal, setWorkspaceCloseSignal] = useState(0);
   const autoCheckInFlightRef = useRef(false);
   const lastUpdateNotificationRef = useRef<string | null>(null);
   const lastActivePresetIdRef = useRef<string | null>(null);
@@ -387,6 +393,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         closeHelp: () => setHelpOpen(false),
         openSkillDetailById: (skillId: string) => setDetailSkillId(skillId),
         closeSkillDetail: () => setDetailSkillId(null),
+        workspaceCloseSignal,
+        requestWorkspaceClose: () => setWorkspaceCloseSignal((n) => n + 1),
       }}
     >
       {children}

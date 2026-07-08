@@ -32,7 +32,7 @@
         "description": "Import from local folders, Git repositories, archives, or the marketplace. Batch-import multiple skills from a folder at once."
       },
       "sync": {
-        "title": "Library",
+        "title": "Skill Hub",
         "description": "Browse all installed skills with bulk tag editing and per-agent sync toggles. Filter by source or tag — including an Untagged pill to surface skills missing labels. Click an agent icon on any skill card to install or remove that skill for that agent in one click; the always-visible delete button removes a skill from the central library. Click the card itself to view docs, version history, and agent sync details."
       },
       "global": {
@@ -80,7 +80,7 @@
     "recentActivity": "Recent Activity"
   },
   "mySkills": {
-    "title": "Library",
+    "title": "Skill Hub",
     "applyToDefault": "Apply Preset",
     "applied": "Applied",
     "notAppliedYet": "Not applied yet",
@@ -126,6 +126,8 @@
     "unsyncCompleted": "{{name}} unsynced from {{count}} agents",
     "targetClickInstall": "Click to install",
     "targetClickUninstall": "Click to uninstall",
+    "targetSynced": "synced",
+    "targetOrphan": "synced · agent unavailable",
     "targetInstalled": "{{name}} installed to {{agent}}",
     "targetUninstalled": "{{name}} uninstalled from {{agent}}",
     "gitRepoSync": "Sync",
@@ -904,7 +906,9 @@
         "localNewer": "Local changed",
         "centerNewer": "Center changed",
         "diverged": "Conflict"
-      }
+      },
+      "statusFilter": "Status",
+      "allStatus": "All statuses"
     }
   }
 }

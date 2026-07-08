@@ -54,6 +54,11 @@ tools.filter(t => t.installed && t.enabled && t.category === config.category)
 | `additional_scan_dirs` | 仅用于发现的额外扫描目录 | Codex 兜底扫 `.agents/skills` |
 | `recursive_scan` | 是否递归扫描嵌套 skill 目录 | Hermes 用 |
 
+**WorkBuddy 路径约定**：WorkBuddy 原生扫描的用户级目录是
+`~/.workbuddy/skills`，对应内置 adapter 的 `relative_skills_dir` 应为
+`.workbuddy/skills`。不要使用 `~/.workbuddy/skills-marketplace/skills`
+作为部署目录；该目录不是 WorkBuddy 原生 `@Skill` 列表的扫描来源。
+
 ### 第 1 层：installed（装没装）—— `ToolAdapter::is_installed()`
 
 位于 `tool_adapters.rs:130`。判断办法很朴素：**看 `$HOME` 下有没有它的

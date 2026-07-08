@@ -56,6 +56,66 @@ fn reconcile_tool_sync_after_path_change(store: &SkillStore, tool_key: &str) {
     }
 }
 
+pub fn reconcile_workbuddy_skills_dir(store: &SkillStore) -> usize {
+    const WORKBUDDY_KEY: &str = "workbuddy";
+    const OLD_WORKBUDDY_SKILLS_DIR: &str = ".workbuddy/skills-marketplace/skills";
+
+    let Some(home) = dirs::home_dir() else {
+        return 0;
+    };
+    let old_dir = home.join(OLD_WORKBUDDY_SKILLS_DIR);
+    let Some(adapter) = tool_adapters::find_adapter_with_store(store, WORKBUDDY_KEY) else {
+        return 0;
+    };
+    if adapter.skills_dir() == old_dir {
+        return 0;
+    }
+
+    let stale_targets: Vec<_> = store
+        .get_all_targets()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|target| {
+            target.tool == WORKBUDDY_KEY && PathBuf::from(&target.target_path).starts_with(&old_dir)
+        })
+        .collect();
+
+    if !stale_targets.is_empty() {
+        log::info!(
+            "reconcile_workbuddy_skills_dir: moving {} WorkBuddy target(s) from {} to {}",
+            stale_targets.len(),
+            old_dir.display(),
+            adapter.skills_dir().display()
+        );
+        for target in &stale_targets {
+            let old_path = PathBuf::from(&target.target_path);
+            if let Err(e) = sync_engine::remove_target(&old_path) {
+                log::warn!(
+                    "reconcile_workbuddy_skills_dir: failed to remove stale target {}: {e}",
+                    old_path.display()
+                );
+            }
+            if let Err(e) = store.delete_target(&target.skill_id, WORKBUDDY_KEY) {
+                log::warn!(
+                    "reconcile_workbuddy_skills_dir: failed to delete stale target record for skill {}: {e}",
+                    target.skill_id
+                );
+                continue;
+            }
+            if let Err(e) =
+                scenario_service::sync_single_skill_to_tool(store, &target.skill_id, WORKBUDDY_KEY)
+            {
+                log::warn!(
+                    "reconcile_workbuddy_skills_dir: failed to resync skill {} to WorkBuddy: {e}",
+                    target.skill_id
+                );
+            }
+        }
+    }
+
+    stale_targets.len()
+}
+
 static GET_TOOL_STATUS_FIRST_CALL: AtomicBool = AtomicBool::new(true);
 
 #[tauri::command]

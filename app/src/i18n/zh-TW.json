@@ -32,7 +32,7 @@
         "description": "支援從本機資料夾、Git 倉庫、壓縮檔或市集匯入。支援批次匯入資料夾中的多個 Skill。"
       },
       "sync": {
-        "title": "技能庫",
+        "title": "技能中心",
         "description": "瀏覽所有已安裝的 Skills，支援批次標籤編輯和依 Agent 同步開關。可依來源或標籤篩選，新增的「未標籤」篩選項可快速找出漏打標籤的 Skills。點擊卡片上的 Agent 圖示即可一鍵為該 Agent 安裝或移除這個 Skill；卡片上恆顯示的刪除按鈕可從中央庫整體移除該 Skill。點擊卡片本身可查看文件、版本歷史和 Agent 同步詳情。"
       },
       "global": {
@@ -80,7 +80,7 @@
     "recentActivity": "近期動態"
   },
   "mySkills": {
-    "title": "技能庫",
+    "title": "技能中心",
     "applyToDefault": "套用 Preset",
     "applied": "已套用",
     "notAppliedYet": "尚未套用",
@@ -130,6 +130,8 @@
     "unsyncNothingToDo": "這個 Skill 當前沒有已同步的 Agent",
     "syncCompleted": "{{name}} 已同步到 {{count}} 個 Agent",
     "unsyncCompleted": "{{name}} 已從 {{count}} 個 Agent 取消同步",
+    "targetSynced": "已同步",
+    "targetOrphan": "已同步 · Agent 不可用",
     "gitRepoSync": "同步",
     "gitRepoSyncing": "同步中…",
     "gitRepoSynced": "已同步",
@@ -820,7 +822,9 @@
         "localNewer": "本機有變更",
         "centerNewer": "中心有變更",
         "diverged": "衝突"
-      }
+      },
+      "statusFilter": "狀態",
+      "allStatus": "全部狀態"
     }
   }
 }

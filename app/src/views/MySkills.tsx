@@ -227,6 +227,20 @@ export function MySkills() {
     return next;
   };
 
+  // "Untagged" is mutually exclusive with real tags: a skill can't be both
+  // untagged and tagged. Selecting one clears the other kind.
+  const toggleTagFilter = (set: Set<string>, value: string): Set<string> => {
+    const next = new Set(set);
+    if (next.has(value)) {
+      next.delete(value);
+      return next;
+    }
+    if (value === UNTAGGED_FILTER) return new Set([UNTAGGED_FILTER]);
+    next.delete(UNTAGGED_FILTER);
+    next.add(value);
+    return next;
+  };
+
   const skillDisplayNames = useMemo(() => {
     const nameCounts = new Map<string, number>();
     for (const skill of skills) {
@@ -1442,11 +1456,11 @@ export function MySkills() {
               const isActive = tagFilters.has(UNTAGGED_FILTER);
               return (
                 <button
-                  onClick={() => setTagFilters(toggleFilter(tagFilters, UNTAGGED_FILTER))}
+                  onClick={() => setTagFilters(toggleTagFilter(tagFilters, UNTAGGED_FILTER))}
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
                     isActive
-                      ? "bg-surface-active text-primary"
+                      ? "bg-accent text-white dark:bg-accent dark:text-white"
                       : "border border-dashed border-border text-muted hover:text-secondary"
                   )}
                   title={t("mySkills.tags.untagged")}

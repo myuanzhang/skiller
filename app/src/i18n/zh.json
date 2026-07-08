@@ -4,7 +4,7 @@
   },
   "sidebar": {
     "dashboard": "Dashboard",
-    "mySkills": "技能库",
+    "mySkills": "技能中心",
     "globalWorkspace": "全局工作区",
     "lobsterAgents": "龙虾 Agent",
     "installSkills": "安装 Skills",
@@ -32,7 +32,7 @@
         "description": "从本地目录、Git 仓库、压缩包或市场导入。支持批量导入文件夹中的多个 Skill。"
       },
       "sync": {
-        "title": "技能库",
+        "title": "技能中心",
         "description": "浏览所有已安装 Skills，支持批量标签编辑和按 Agent 同步开关。可按来源或标签过滤，新增的「未标签」过滤项可快速定位漏打标签的 Skills。点击卡片上的 Agent 图标可一键为该 Agent 安装或移除该 Skill；卡片上始终显示的删除按钮可从中央库整体删除该 Skill。点击卡片本身查看文档、版本历史和 Agent 同步详情。"
       },
       "global": {
@@ -80,7 +80,7 @@
     "recentActivity": "近期动态"
   },
   "mySkills": {
-    "title": "技能库",
+    "title": "技能中心",
     "applyToDefault": "应用 Preset",
     "applied": "已应用",
     "notAppliedYet": "尚未应用",
@@ -126,6 +126,8 @@
     "unsyncCompleted": "{{name}} 已从 {{count}} 个 Agent 取消同步",
     "targetClickInstall": "点击安装",
     "targetClickUninstall": "点击卸载",
+    "targetSynced": "已同步",
+    "targetOrphan": "已同步 · Agent 不可用",
     "targetInstalled": "已将 {{name}} 安装到 {{agent}}",
     "targetUninstalled": "已从 {{agent}} 卸载 {{name}}",
     "gitRepoSync": "同步",
@@ -904,7 +906,9 @@
         "localNewer": "本地有变更",
         "centerNewer": "中心有变更",
         "diverged": "冲突"
-      }
+      },
+      "statusFilter": "状态",
+      "allStatus": "全部状态"
     }
   }
 }

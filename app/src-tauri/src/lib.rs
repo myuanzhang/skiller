@@ -843,6 +843,16 @@ pub fn run() {
             }
 
             let step = Instant::now();
+            let repaired = commands::tools::reconcile_workbuddy_skills_dir(&store_for_setup);
+            if repaired > 0 {
+                log::info!(
+                    "startup: reconciled {} WorkBuddy skill target(s) in {} ms",
+                    repaired,
+                    step.elapsed().as_millis()
+                );
+            }
+
+            let step = Instant::now();
             if is_tray_icon_enabled(&store_for_setup) {
                 ensure_tray_icon(app.handle())?;
                 log::info!(

@@ -96,9 +96,9 @@ export function SyncDots({
   };
 
   const stateTitle: Record<DotState, string> = {
-    synced: " · synced",
+    synced: ` · ${t("mySkills.targetSynced")}`,
     available: "",
-    orphan: " · synced · agent unavailable",
+    orphan: ` · ${t("mySkills.targetOrphan")}`,
   };
 
   const clickHint: Record<DotState, string> = {

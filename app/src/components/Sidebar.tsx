@@ -47,7 +47,7 @@ export function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { presets, viewedPreset, setViewedPresetId, refreshPresets, refreshManagedSkills, projects, refreshProjects, tools, managedSkills } = useApp();
+  const { presets, viewedPreset, setViewedPresetId, refreshPresets, refreshManagedSkills, projects, refreshProjects, tools, managedSkills, closeSkillDetail, requestWorkspaceClose } = useApp();
   const [showCreate, setShowCreate] = useState(false);
   const [showAddProject, setShowAddProject] = useState(false);
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string; icon?: string | null } | null>(null);
@@ -318,7 +318,10 @@ export function Sidebar() {
                                 )}
                               >
                                 <button
-                                  onClick={() => navigate(`${group.basePath}/${tool.key}`)}
+                                  onClick={() => {
+                                    requestWorkspaceClose();
+                                    navigate(`${group.basePath}/${tool.key}`);
+                                  }}
                                   className={cn(
                                     "flex min-w-0 flex-1 items-center gap-2 px-2.5 py-[7px] text-left text-sm leading-5 outline-none",
                                     isActive ? "font-medium text-primary" : "text-tertiary group-hover:text-secondary"
@@ -398,6 +401,7 @@ export function Sidebar() {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => closeSkillDetail()}
                 className={cn(
                   "flex items-center gap-2.5 px-2.5 py-[7px] rounded-[5px] text-sm font-medium transition-colors outline-none",
                   isActive

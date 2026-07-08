@@ -310,6 +310,8 @@ function SkillDetailPanelContent({
       description={skill.description ? <p className="line-clamp-3">{skill.description}</p> : undefined}
       meta={meta}
       onClose={onClose}
+      onBack={onClose}
+      backLabel={t("common.back")}
     >
       {toolToggles && onToggleTool && (
         <AgentToggleSection

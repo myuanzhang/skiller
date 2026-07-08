@@ -10,6 +10,7 @@ skiller/
 ├── CLAUDE.md              # 编码行为准则（单一真源 SSoT）
 ├── docs/                  # 文档
 │   ├── Agent管理机制.md    # Agent 管理机制说明
+│   ├── 中央仓库与同步状态.md # 技能中心作用与同步状态说明
 │   ├── BUILD.md           # 本地构建说明
 │   └── research/          # 调研资料
 └── app/                   # 应用代码（Tauri: Rust 后端 + React/TS 前端）
