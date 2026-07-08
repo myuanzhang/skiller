@@ -69,13 +69,13 @@ export function DeleteSkillButton({ skill, onConfirm, buttonClassName }: Props) 
                 e.stopPropagation();
                 setOpen(false);
               }}
-              className="rounded-[4px] px-2 py-1 text-[12px] font-medium text-tertiary transition-colors hover:bg-surface-hover hover:text-secondary outline-none"
+              className="rounded-control px-2 py-1 text-[12px] font-medium text-tertiary transition-colors hover:bg-surface-hover hover:text-secondary outline-none"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={handleConfirm}
-              className="rounded-[4px] border border-red-500/50 bg-red-600/90 px-2 py-1 text-[12px] font-medium text-white transition-colors hover:bg-red-500 outline-none"
+              className="rounded-control border border-red-500/50 bg-red-600/90 px-2 py-1 text-[12px] font-medium text-white transition-colors hover:bg-red-500 outline-none"
             >
               {t("common.delete")}
             </button>

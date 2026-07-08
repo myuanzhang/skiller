@@ -57,6 +57,14 @@ export default {
           'monospace',
         ],
       },
+      borderRadius: {
+        // Semantic radius scale. Small controls (list rows, inputs, hover-action
+        // chips) collapse the former 3/4/5/6px literals into one consistent
+        // step; cards and panels get their own steps.
+        control: '6px',
+        card: '8px',
+        panel: '12px',
+      },
     },
   },
   plugins: [],

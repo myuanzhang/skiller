@@ -44,7 +44,7 @@ export function DetailSheet({
         {onBack ? (
           <button
             onClick={onBack}
-            className="absolute top-4 left-5 z-10 flex shrink-0 items-center gap-1 rounded-[4px] py-1.5 pr-2.5 pl-1.5 text-[13px] font-medium text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary"
+            className="absolute top-4 left-5 z-10 flex shrink-0 items-center gap-1 rounded-control py-1.5 pr-2.5 pl-1.5 text-[13px] font-medium text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary"
           >
             <ArrowLeft className="h-4 w-4" />
             {backLabel ?? "Back"}
@@ -52,7 +52,7 @@ export function DetailSheet({
         ) : null}
         <button
           onClick={onClose}
-          className="absolute top-4 right-5 z-10 shrink-0 rounded-[4px] p-1.5 text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary"
+          className="absolute top-4 right-5 z-10 shrink-0 rounded-control p-1.5 text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary"
         >
           <X className="h-4 w-4" />
         </button>

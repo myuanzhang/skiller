@@ -115,7 +115,7 @@ export function SyncDots({
         const interactive = !!onToggle && !isPending;
         const title = `${dot.displayName}${stateTitle[dot.state]}${onToggle ? clickHint[dot.state] : ""}`;
         const baseClass = cn(
-          "inline-flex select-none items-center justify-center overflow-hidden rounded-[4px] transition-colors",
+          "inline-flex select-none items-center justify-center overflow-hidden rounded-control transition-colors",
           dim,
           useIcon ? iconStateClass[dot.state] : cn("border font-mono font-semibold tracking-tight", textStateClass[dot.state]),
           interactive && "cursor-pointer hover:ring-1 hover:ring-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
@@ -126,7 +126,7 @@ export function SyncDots({
         ) : useIcon ? (
           <AgentIcon
             agentKey={dot.key}
-            className="h-full w-full rounded-[4px] border-0 bg-transparent"
+            className="h-full w-full rounded-control border-0 bg-transparent"
           />
         ) : (
           shortLabel(dot.displayName, dot.key)
@@ -162,7 +162,7 @@ export function SyncDots({
         <span
           title={`+${hiddenCount} more agents`}
           className={cn(
-            "inline-flex select-none items-center justify-center rounded-[4px] border border-border-subtle bg-surface-hover font-mono font-semibold text-faint",
+            "inline-flex select-none items-center justify-center rounded-control border border-border-subtle bg-surface-hover font-mono font-semibold text-faint",
             dim,
           )}
         >

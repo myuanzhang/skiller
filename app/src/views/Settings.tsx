@@ -711,12 +711,12 @@ export function Settings() {
   };
 
   const fieldClass =
-    "h-8 rounded-[4px] border border-border-subtle bg-background px-2.5 text-[13px] text-secondary outline-none transition-colors focus:border-border";
+    "h-8 rounded-control border border-border-subtle bg-background px-2.5 text-[13px] text-secondary outline-none transition-colors focus:border-border";
   const selectClass = `${fieldClass} min-w-[180px] appearance-none pr-8`;
   const actionButtonClass =
-    "inline-flex h-8 items-center gap-1.5 rounded-[4px] border px-2.5 text-[13px] font-medium transition-colors outline-none disabled:opacity-60";
+    "inline-flex h-8 items-center gap-1.5 rounded-control border px-2.5 text-[13px] font-medium transition-colors outline-none disabled:opacity-60";
   const segmentedButtonClass =
-    "flex h-8 items-center gap-1.5 px-2.5 rounded-[3px] text-[13px] font-medium transition-colors outline-none";
+    "flex h-8 items-center gap-1.5 px-2.5 rounded-control text-[13px] font-medium transition-colors outline-none";
 
   const themeOptions: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
     { value: "light", label: t("settings.themeLight"), icon: Sun },
@@ -773,7 +773,7 @@ export function Settings() {
   const renderAgentCard = (agent: typeof tools[number], dragHandle?: React.ReactNode) => (
     <div
       className={cn(
-        "group relative flex flex-col gap-1.5 rounded-[6px] border px-3 py-2.5 transition-colors",
+        "group relative flex flex-col gap-1.5 rounded-control border px-3 py-2.5 transition-colors",
         agent.installed && agent.enabled
           ? "border-border bg-surface"
           : agent.installed
@@ -826,7 +826,7 @@ export function Settings() {
                 <AgentIcon
                   agentKey={agent.key}
                   displayName={agent.display_name}
-                  className="h-5 w-5 rounded-[5px]"
+                  className="h-5 w-5 rounded-control"
                 />
                 <h3 className={cn("truncate text-[13px] font-medium", agent.installed ? "text-secondary" : "text-muted")}>
                   {agent.display_name}
@@ -1216,7 +1216,7 @@ export function Settings() {
                       type="text"
                       value={centralRepoPathInput}
                       onChange={(e) => setCentralRepoPathInput(e.target.value)}
-                      className="h-8 min-w-0 flex-1 rounded-[4px] border border-border-subtle bg-background px-2.5 text-[13px] font-mono text-secondary outline-none transition-colors focus:border-border"
+                      className="h-8 min-w-0 flex-1 rounded-control border border-border-subtle bg-background px-2.5 text-[13px] font-mono text-secondary outline-none transition-colors focus:border-border"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === "Enter") void handleSaveCentralRepoPath();
@@ -1230,7 +1230,7 @@ export function Settings() {
                       type="button"
                       onClick={() => handleBrowsePath(setCentralRepoPathInput)}
                       disabled={savingCentralRepoPath}
-                      className="inline-flex h-8 items-center gap-1 rounded-[4px] border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary disabled:opacity-60"
+                      className="inline-flex h-8 items-center gap-1 rounded-control border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary disabled:opacity-60"
                     >
                       <FolderOpen className="w-3 h-3" />
                       {t("settings.selectFolder")}
@@ -1239,7 +1239,7 @@ export function Settings() {
                       type="button"
                       onClick={() => void handleSaveCentralRepoPath()}
                       disabled={savingCentralRepoPath}
-                      className="inline-flex h-8 items-center gap-1 rounded-[4px] border border-emerald-500/30 px-2.5 text-[13px] font-medium text-emerald-600 transition-colors outline-none hover:bg-emerald-500/5 disabled:opacity-60"
+                      className="inline-flex h-8 items-center gap-1 rounded-control border border-emerald-500/30 px-2.5 text-[13px] font-medium text-emerald-600 transition-colors outline-none hover:bg-emerald-500/5 disabled:opacity-60"
                     >
                       {savingCentralRepoPath ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -1255,13 +1255,13 @@ export function Settings() {
                         setEditingCentralRepoPath(false);
                       }}
                       disabled={savingCentralRepoPath}
-                      className="inline-flex h-8 items-center gap-1 rounded-[4px] border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary disabled:opacity-60"
+                      className="inline-flex h-8 items-center gap-1 rounded-control border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary disabled:opacity-60"
                     >
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 ) : (
-                  <div className="flex min-w-0 items-center gap-1.5 rounded-[4px] border border-border-subtle bg-background px-2 py-1">
+                  <div className="flex min-w-0 items-center gap-1.5 rounded-control border border-border-subtle bg-background px-2 py-1">
                     <Folder className="w-3 h-3 text-muted" />
                     <span className="truncate text-[13px] font-mono text-tertiary">{displayedRepoPath}</span>
                   </div>
@@ -1270,7 +1270,7 @@ export function Settings() {
                   <button
                     type="button"
                     onClick={handleStartEditCentralRepoPath}
-                    className="inline-flex h-8 items-center gap-1 rounded-[4px] border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary"
+                    className="inline-flex h-8 items-center gap-1 rounded-control border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary"
                   >
                     <Pencil className="w-3 h-3" />
                     {t("settings.changeDir")}
@@ -1281,7 +1281,7 @@ export function Settings() {
                     type="button"
                     onClick={() => void handleResetCentralRepoPath()}
                     disabled={savingCentralRepoPath}
-                    className="inline-flex h-8 items-center gap-1 rounded-[4px] border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary disabled:opacity-60"
+                    className="inline-flex h-8 items-center gap-1 rounded-control border border-border-subtle px-2.5 text-[13px] font-medium text-muted transition-colors outline-none hover:text-secondary disabled:opacity-60"
                   >
                     {savingCentralRepoPath ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -1296,7 +1296,7 @@ export function Settings() {
                   onClick={handleOpenRepoInFinder}
                   disabled={openingRepo}
                   className={cn(
-                    "inline-flex h-8 items-center gap-1 rounded-[4px] border px-2.5 text-[13px] font-medium transition-all outline-none",
+                    "inline-flex h-8 items-center gap-1 rounded-control border px-2.5 text-[13px] font-medium transition-all outline-none",
                     "border-accent-border bg-accent-bg text-accent",
                     "hover:border-accent hover:bg-accent-bg",
                     openingRepo && "cursor-wait opacity-70"
@@ -1323,7 +1323,7 @@ export function Settings() {
                 <h3 className="text-[13px] text-secondary font-medium mb-0.5">{t("settings.syncMode")}</h3>
                 <p className="text-[13px] text-muted">{t("settings.syncModeDesc")}</p>
               </div>
-              <div className="flex flex-wrap rounded-[4px] border border-border-subtle bg-background p-px">
+              <div className="flex flex-wrap rounded-control border border-border-subtle bg-background p-px">
                 <button
                   onClick={() => handleSyncModeChange("symlink")}
                   className={cn(
@@ -1351,7 +1351,7 @@ export function Settings() {
                 <h3 className="text-[13px] text-secondary font-medium mb-0.5">{t("settings.theme")}</h3>
                 <p className="text-[13px] text-muted">{t("settings.themeDesc")}</p>
               </div>
-              <div className="flex flex-wrap rounded-[4px] border border-border-subtle bg-background p-px">
+              <div className="flex flex-wrap rounded-control border border-border-subtle bg-background p-px">
                 {themeOptions.map((opt) => {
                   const Icon = opt.icon;
                   return (
@@ -1376,7 +1376,7 @@ export function Settings() {
                 <h3 className="text-[13px] text-secondary font-medium mb-0.5">{t("settings.textSize")}</h3>
                 <p className="text-[13px] text-muted">{t("settings.textSizeDesc")}</p>
               </div>
-              <div className="flex flex-wrap rounded-[4px] border border-border-subtle bg-background p-px">
+              <div className="flex flex-wrap rounded-control border border-border-subtle bg-background p-px">
                 {([
                   { value: "small", label: t("settings.textSizeSmall") },
                   { value: "default", label: t("settings.textSizeDefault") },
@@ -1453,7 +1453,7 @@ export function Settings() {
                   <p className="text-[12px] text-muted mt-1">{t("settings.trayIconOffHint")}</p>
                 )}
               </div>
-              <div className="flex flex-wrap rounded-[4px] border border-border-subtle bg-background p-px">
+              <div className="flex flex-wrap rounded-control border border-border-subtle bg-background p-px">
                 {(["", "hide", "close"] as const).map((val) => (
                   <button
                     key={val}
@@ -1477,7 +1477,7 @@ export function Settings() {
                 <h3 className="text-[13px] text-secondary font-medium mb-0.5">{t("settings.trayIcon")}</h3>
                 <p className="text-[13px] text-muted">{t("settings.trayIconDesc")}</p>
               </div>
-              <div className="flex flex-wrap rounded-[4px] border border-border-subtle bg-background p-px">
+              <div className="flex flex-wrap rounded-control border border-border-subtle bg-background p-px">
                 <button
                   onClick={() => handleShowTrayIconChange(true)}
                   className={cn(
