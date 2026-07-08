@@ -635,7 +635,7 @@ function AddSkillsSheetBody({ onClose, target, managedSkills, onInstalled }: Pro
         </div>
 
         <div className="shrink-0 border-t border-border-subtle bg-bg-secondary px-5 py-3">
-          <button
+          <Button
             onClick={handleInstall}
             disabled={
               installing ||
@@ -643,11 +643,11 @@ function AddSkillsSheetBody({ onClose, target, managedSkills, onInstalled }: Pro
               selectableSelected.length === 0 ||
               (target.kind === "project" && selectedAgents.length === 0)
             }
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-auto w-full py-2.5"
+            icon={installing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
           >
-            {installing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {ctaLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

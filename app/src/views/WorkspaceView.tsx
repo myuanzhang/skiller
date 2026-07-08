@@ -30,6 +30,7 @@ import type { ManagedSkill, ProjectSkill } from "../lib/tauri";
 import { getErrorMessage } from "../lib/error";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
+import { Button } from "../components/ui/Button";
 import type { WorkspaceConfig } from "./workspaceConfigs";
 
 function compactHomePath(path: string) {
@@ -807,13 +808,13 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               </button>
             </div>
 
-            <button
+            <Button
               onClick={() => setAddDialogOpen(true)}
-              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-accent px-3 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover"
+              icon={<Plus className="h-3.5 w-3.5" />}
+              className="shrink-0"
             >
-              <Plus className="h-3.5 w-3.5" />
               {t("globalWorkspace.addSkill")}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -954,13 +955,13 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               : t("mySkills.noMatch")}
           </h3>
           {localSkills.length === 0 && (
-            <button
+            <Button
               onClick={() => setAddDialogOpen(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover"
+              icon={<Plus className="h-3.5 w-3.5" />}
+              className="mt-4 h-auto px-4 py-2"
             >
-              <Plus className="h-3.5 w-3.5" />
               {t("globalWorkspace.addSkill")}
-            </button>
+            </Button>
           )}
         </div>
       ) : (

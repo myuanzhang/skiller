@@ -67,14 +67,15 @@ export function MultiSelectToolbar({
       {selectedCount > 0 && (
         <>
           {anyUpdatable && labels.update && onUpdate && (
-            <button
+            <Button
+              size="sm"
               onClick={onUpdate}
               disabled={updating}
-              className="inline-flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+              className="py-1"
+              icon={<RotateCcw className={cn("h-3.5 w-3.5", updating && "animate-spin")} />}
             >
-              <RotateCcw className={cn("h-3.5 w-3.5", updating && "animate-spin")} />
               {labels.update}
-            </button>
+            </Button>
           )}
           {anyCanUpdateProject && labels.updateProject && onUpdateProject && (
             <button

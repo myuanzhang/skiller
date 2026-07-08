@@ -32,6 +32,7 @@ import { ProjectAgentDots } from "../components/ProjectAgentDots";
 import { PresetBar } from "../components/PresetBar";
 import { SkillMarkdown } from "../components/SkillMarkdown";
 import { DocumentDiffViewer } from "../components/DocumentDiffViewer";
+import { Button } from "../components/ui/Button";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { cn } from "../utils";
 import * as api from "../lib/tauri";
@@ -900,16 +901,15 @@ export function ProjectDetail() {
             </div>
 
             <div className="relative shrink-0">
-              <button
+              <Button
                 onClick={() => {
                   setShowExportDialog(true);
                   dismissAddCallout();
                 }}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover"
+                icon={<Plus className="h-3.5 w-3.5" />}
               >
-                <Plus className="h-3.5 w-3.5" />
                 {t("project.addSkill")}
-              </button>
+              </Button>
               {showAddCallout && groupedSkills.length > 0 && (
                 <div className="absolute right-0 top-full z-20 mt-2 w-72 rounded-md border border-border bg-surface p-3 text-[12px] leading-snug shadow-lg">
                   <button
@@ -1051,16 +1051,16 @@ export function ProjectDetail() {
             {groupedSkills.length === 0 ? t("project.noSkillsHint") : ""}
           </p>
           {groupedSkills.length === 0 && (
-            <button
+            <Button
               onClick={() => {
                 setShowExportDialog(true);
                 dismissAddCallout();
               }}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover"
+              icon={<Plus className="h-3.5 w-3.5" />}
+              className="mt-4 h-auto px-4 py-2"
             >
-              <Plus className="h-3.5 w-3.5" />
               {t("project.addSkillsCta")}
-            </button>
+            </Button>
           )}
         </div>
       ) : (
