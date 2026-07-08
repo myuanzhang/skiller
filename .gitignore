@@ -29,3 +29,10 @@ logs/
 # Local runtime data
 *.local
 .loop-log
+
+# Screenshots / pasted images
+PixPin_*.jpg
+PixPin_*.png
+Screenshot*.png
+截图*.png
+
