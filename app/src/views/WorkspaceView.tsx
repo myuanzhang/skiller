@@ -33,6 +33,7 @@ import { AddSkillsSheet } from "../components/AddSkillsSheet";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { DocumentSkeleton, SkeletonRows } from "../components/ui/Skeleton";
+import { SkillCardShell } from "../components/ui/SkillCardShell";
 import { StatusPill } from "../components/ui/StatusPill";
 import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
 import type { WorkspaceConfig } from "./workspaceConfigs";
@@ -76,13 +77,7 @@ function WorkspaceSkillCard({
 }) {
   if (viewMode === "list") {
     return (
-      <div
-        className={cn(
-          "app-panel group relative flex cursor-pointer items-center gap-3.5 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
-          active && "border-l-2 border-l-accent"
-        )}
-        onClick={onClick}
-      >
+      <SkillCardShell viewMode="list" active={active} onClick={onClick}>
         <h3
           className="w-[180px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
           title={title}
@@ -126,18 +121,12 @@ function WorkspaceSkillCard({
             {actions}
           </div>
         )}
-      </div>
+      </SkillCardShell>
     );
   }
 
   return (
-    <div
-      className={cn(
-        "app-panel group relative flex h-full cursor-pointer flex-col overflow-hidden transition-all hover:border-border hover:bg-surface-hover",
-        active && "border-l-2 border-l-accent"
-      )}
-      onClick={onClick}
-    >
+    <SkillCardShell viewMode="grid" active={active} onClick={onClick}>
       <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
         <h3
           className="flex-1 truncate text-[14px] font-semibold text-primary group-hover:text-accent-light"
@@ -176,7 +165,7 @@ function WorkspaceSkillCard({
         <StatusPill className={status.className}>{status.label}</StatusPill>
         {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
       </div>
-    </div>
+    </SkillCardShell>
   );
 }
 
