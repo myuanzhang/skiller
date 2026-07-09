@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Modal } from "./ui/Modal";
 
 interface Props {
   open: boolean;
@@ -31,9 +32,11 @@ export function CloseActionDialog({ open, onCancel, onClose, onHide }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleCancel} />
-      <div className="relative bg-surface border border-border rounded-xl w-full max-w-sm p-5 shadow-2xl">
+    <Modal
+      open={open}
+      onClose={handleCancel}
+      contentClassName="bg-surface border border-border rounded-xl w-full max-w-sm p-5 shadow-2xl"
+    >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[13px] font-semibold text-primary">
             {t("closeAction.title")}
@@ -72,7 +75,6 @@ export function CloseActionDialog({ open, onCancel, onClose, onHide }: Props) {
             {t("closeAction.hide")}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

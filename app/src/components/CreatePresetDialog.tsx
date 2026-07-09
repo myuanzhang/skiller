@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
 import { PRESET_ICON_OPTIONS } from "../lib/presetIcons";
+import { Modal } from "./ui/Modal";
 
 interface Props {
   open: boolean;
@@ -36,9 +37,11 @@ export function CreatePresetDialog({ open, onClose, onCreate }: Props) {
   const inputClass = "w-full bg-background border border-border-subtle rounded-control px-3 py-2 text-[13px] text-secondary focus:outline-none focus:border-border transition-all placeholder-faint";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface border border-border rounded-xl w-full max-w-[400px] p-5 shadow-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      contentClassName="bg-surface border border-border rounded-xl w-full max-w-[400px] p-5 shadow-2xl"
+    >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[13px] font-semibold text-primary">{t("preset.create")}</h2>
           <button onClick={onClose} className="text-muted hover:text-secondary p-1 rounded transition-colors outline-none">
@@ -110,7 +113,6 @@ export function CreatePresetDialog({ open, onClose, onCreate }: Props) {
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
