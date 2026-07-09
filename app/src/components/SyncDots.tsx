@@ -4,6 +4,12 @@ import type { ManagedSkill, ToolInfo } from "../lib/tauri";
 import { cn } from "../utils";
 import { AgentIcon } from "./AgentIcon";
 import { hasAgentIcon } from "../lib/agentIcons";
+import {
+  agentDotIconClass,
+  agentDotTextClass,
+  hiddenAgentDotClass,
+  type AgentDotState,
+} from "../lib/statusPalette";
 
 function shortLabel(displayName: string, key: string): string {
   const words = displayName.trim().split(/\s+/).filter(Boolean);
@@ -14,7 +20,7 @@ function shortLabel(displayName: string, key: string): string {
   return word.slice(0, 2).toUpperCase();
 }
 
-type DotState = "synced" | "available" | "orphan";
+type DotState = AgentDotState;
 
 interface Dot {
   key: string;
@@ -83,18 +89,6 @@ export function SyncDots({
     ? "h-[16px] w-[16px] text-[8px]"
     : "h-[18px] w-[18px] text-[9px]";
 
-  const iconStateClass: Record<DotState, string> = {
-    synced: "bg-surface",
-    available: "bg-surface opacity-45",
-    orphan: "ring-1 ring-inset ring-amber-500/60 bg-surface",
-  };
-
-  const textStateClass: Record<DotState, string> = {
-    synced: "border-transparent bg-[var(--color-text-primary)] text-[var(--color-bg)]",
-    available: "border border-border-subtle bg-surface-hover text-faint",
-    orphan: "border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  };
-
   const stateTitle: Record<DotState, string> = {
     synced: ` · ${t("mySkills.targetSynced")}`,
     available: "",
@@ -117,7 +111,7 @@ export function SyncDots({
         const baseClass = cn(
           "inline-flex select-none items-center justify-center overflow-hidden rounded-control transition-colors",
           dim,
-          useIcon ? iconStateClass[dot.state] : cn("border font-mono font-semibold tracking-tight", textStateClass[dot.state]),
+          useIcon ? agentDotIconClass[dot.state] : cn("border font-mono font-semibold tracking-tight", agentDotTextClass[dot.state]),
           interactive && "cursor-pointer hover:ring-1 hover:ring-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
           isPending && "opacity-70",
         );
@@ -162,7 +156,8 @@ export function SyncDots({
         <span
           title={`+${hiddenCount} more agents`}
           className={cn(
-            "inline-flex select-none items-center justify-center rounded-control border border-border-subtle bg-surface-hover font-mono font-semibold text-faint",
+            "inline-flex select-none items-center justify-center rounded-control",
+            hiddenAgentDotClass,
             dim,
           )}
         >
