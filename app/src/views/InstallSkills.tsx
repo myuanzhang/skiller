@@ -1245,52 +1245,46 @@ export function InstallSkills() {
         <div className="space-y-4 pb-8 animate-in fade-in duration-300">
           <section className="app-panel overflow-hidden">
             <div className="border-b border-border-subtle px-4 py-3.5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="max-w-xl">
-                  <div className="mb-2 flex flex-wrap items-center gap-2 text-[13px] text-muted">
-                    <span className="inline-flex items-center gap-1.5 rounded-control border border-accent-border bg-accent-bg px-2 py-1 font-medium text-accent-light">
-                      <FolderUp className="h-3.5 w-3.5" />
-                      {t("install.local.title")}
-                    </span>
-                  </div>
-
-                  <h2 className="text-[14px] font-semibold text-secondary">
-                    {t("install.local.title")}
-                  </h2>
-                  <p className="mt-1 text-[13px] leading-5 text-muted">
-                    {t("install.local.description")}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={handleLocalFolderInstall}
-                    className="app-button-primary"
-                  >
-                    <FolderUp className="h-4 w-4" />
-                    {t("install.local.selectFolder")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLocalFileInstall}
-                    className="app-button-secondary bg-background"
-                  >
-                    <UploadCloud className="h-4 w-4" />
-                    {t("install.local.selectArchive")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBatchImportFolder}
-                    className="app-button-secondary bg-background"
-                  >
-                    <FolderInput className="h-4 w-4" />
-                    {t("install.local.batchImport")}
-                  </button>
-                </div>
+              <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted">
+                <span className="inline-flex items-center gap-1.5 rounded-control border border-accent-border bg-accent-bg px-2 py-1 font-medium text-accent-light">
+                  <FolderUp className="h-3.5 w-3.5" />
+                  {t("install.local.title")}
+                </span>
               </div>
+              <h2 className="mt-2 text-[14px] font-semibold text-secondary">
+                {t("install.local.title")}
+              </h2>
+              <p className="mt-1 max-w-2xl text-[13px] leading-5 text-muted">
+                {t("install.local.description")}
+              </p>
             </div>
 
+            <div className="grid grid-cols-3 gap-2.5 p-3.5">
+              <button
+                type="button"
+                onClick={handleLocalFolderInstall}
+                className="app-button-primary h-auto justify-start px-3 py-3"
+              >
+                <FolderUp className="h-4 w-4" />
+                {t("install.local.selectFolder")}
+              </button>
+              <button
+                type="button"
+                onClick={handleLocalFileInstall}
+                className="app-button-secondary h-auto justify-start bg-background px-3 py-3"
+              >
+                <UploadCloud className="h-4 w-4" />
+                {t("install.local.selectArchive")}
+              </button>
+              <button
+                type="button"
+                onClick={handleBatchImportFolder}
+                className="app-button-secondary h-auto justify-start bg-background px-3 py-3"
+              >
+                <FolderInput className="h-4 w-4" />
+                {t("install.local.batchImport")}
+              </button>
+            </div>
           </section>
 
           {localError ? (
@@ -1305,7 +1299,7 @@ export function InstallSkills() {
           ) : null}
 
           <section className="app-panel overflow-hidden">
-            <div className="flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle bg-bg-secondary/60 px-4 py-3.5">
               <div>
                 <h2 className="text-[13px] font-semibold text-secondary">{t("install.scan.title")}</h2>
                 <p className="mt-0.5 text-[13px] text-muted">
