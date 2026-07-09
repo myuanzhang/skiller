@@ -34,7 +34,7 @@ import { SkillMarkdown } from "../components/SkillMarkdown";
 import { DocumentDiffViewer } from "../components/DocumentDiffViewer";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { SkeletonRows } from "../components/ui/Skeleton";
+import { DocumentSkeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { StatusPill } from "../components/ui/StatusPill";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
@@ -1584,27 +1584,27 @@ function ProjectSkillDetailPanel({
       )}
 
       {docLoading ? (
-        <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+        <DocumentSkeleton />
       ) : contentTab === "diff" ? (
         docContent && centerDocContent ? (
           <DocumentDiffViewer original={docContent} updated={centerDocContent} />
         ) : centerDocLoading ? (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+          <DocumentSkeleton />
         ) : (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.sourceDiffUnavailable")}</div>
+          <EmptyState className="mt-12" title={t("mySkills.sourceDiffUnavailable")} />
         )
       ) : contentTab === "center" ? (
         centerDocLoading ? (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+          <DocumentSkeleton />
         ) : centerDocContent ? (
           <SkillMarkdown content={centerDocContent} />
         ) : (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.sourceDiffUnavailable")}</div>
+          <EmptyState className="mt-12" title={t("mySkills.sourceDiffUnavailable")} />
         )
       ) : docContent ? (
         <SkillMarkdown content={docContent} />
       ) : (
-        <div className="mt-12 text-center text-[13px] text-muted">{t("common.documentMissing")}</div>
+        <EmptyState className="mt-12" title={t("common.documentMissing")} />
       )}
     </DetailSheet>
   );

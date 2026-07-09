@@ -32,7 +32,7 @@ import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTag
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { SkeletonRows } from "../components/ui/Skeleton";
+import { DocumentSkeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { StatusPill } from "../components/ui/StatusPill";
 import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
 import type { WorkspaceConfig } from "./workspaceConfigs";
@@ -1056,27 +1056,27 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         )}
 
         {localDocLoading ? (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+          <DocumentSkeleton />
         ) : localContentTab === "diff" ? (
           localDocContent && localCenterDocContent ? (
             <DocumentDiffViewer original={localDocContent} updated={localCenterDocContent} />
           ) : localCenterDocLoading ? (
-            <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+            <DocumentSkeleton />
           ) : (
-            <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.sourceDiffUnavailable")}</div>
+            <EmptyState className="mt-12" title={t("mySkills.sourceDiffUnavailable")} />
           )
         ) : localContentTab === "center" ? (
           localCenterDocLoading ? (
-            <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+            <DocumentSkeleton />
           ) : localCenterDocContent ? (
             <SkillMarkdown content={localCenterDocContent} />
           ) : (
-            <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.sourceDiffUnavailable")}</div>
+            <EmptyState className="mt-12" title={t("mySkills.sourceDiffUnavailable")} />
           )
         ) : localDocContent ? (
           <SkillMarkdown content={localDocContent} />
         ) : (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("common.documentMissing")}</div>
+          <EmptyState className="mt-12" title={t("common.documentMissing")} />
         )}
       </DetailSheet>
 

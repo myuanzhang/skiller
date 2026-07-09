@@ -27,6 +27,8 @@ import { SkillMarkdown } from "./SkillMarkdown";
 import { AgentToggleSection, type AgentToggleItem } from "./AgentToggleSection";
 import { SkillProjectsSection } from "./SkillProjectsSection";
 import { SyncDots } from "./SyncDots";
+import { EmptyState } from "./ui/EmptyState";
+import { DocumentSkeleton } from "./ui/Skeleton";
 
 interface Props {
   skill: ManagedSkill | null;
@@ -361,29 +363,29 @@ function SkillDetailPanelContent({
       )}
 
       {loading ? (
-        <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+        <DocumentSkeleton />
       ) : contentTab === "diff" ? (
         sourceDiffLoading ? (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+          <DocumentSkeleton />
         ) : activeSourceDiff ? (
           <SkillSourceDiffViewer entries={activeSourceDiff.entries} />
         ) : sourceDiffFailed ? (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.sourceDiffUnavailable")}</div>
+          <EmptyState className="mt-12" title={t("mySkills.sourceDiffUnavailable")} />
         ) : (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+          <DocumentSkeleton />
         )
       ) : contentTab === "source" ? (
         sourceLoading ? (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+          <DocumentSkeleton />
         ) : activeSourceDoc ? (
           <SkillMarkdown content={activeSourceDoc.content} />
         ) : (
-          <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.sourceDiffUnavailable")}</div>
+          <EmptyState className="mt-12" title={t("mySkills.sourceDiffUnavailable")} />
         )
       ) : activeDoc ? (
         <SkillMarkdown content={activeDoc.content} />
       ) : (
-        <div className="mt-12 text-center text-[13px] text-muted">{t("common.documentMissing")}</div>
+        <EmptyState className="mt-12" title={t("common.documentMissing")} />
       )}
     </DetailSheet>
   );
