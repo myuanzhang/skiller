@@ -79,71 +79,82 @@ export function MultiSelectToolbar({
             </Button>
           )}
           {anyCanUpdateProject && labels.updateProject && onUpdateProject && (
-            <button
+            <Button
+              size="sm"
               onClick={onUpdateProject}
               disabled={updatingProject}
-              className="inline-flex items-center gap-1.5 rounded-md bg-sky-600/90 px-2.5 py-1 text-[13px] font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50"
+              className="bg-sky-600/90 py-1 text-white hover:bg-sky-500"
+              icon={<Download className={cn("h-3.5 w-3.5", updatingProject && "animate-spin")} />}
             >
-              <Download className={cn("h-3.5 w-3.5", updatingProject && "animate-spin")} />
               {labels.updateProject}
-            </button>
+            </Button>
           )}
           {anyCanUpdateCenter && labels.updateCenter && onUpdateCenter && (
-            <button
+            <Button
+              size="sm"
               onClick={onUpdateCenter}
               disabled={updatingCenter}
-              className="inline-flex items-center gap-1.5 rounded-md bg-amber-600/90 px-2.5 py-1 text-[13px] font-medium text-white hover:bg-amber-500 transition-colors disabled:opacity-50"
+              className="bg-amber-600/90 py-1 text-white hover:bg-amber-500"
+              icon={<Upload className={cn("h-3.5 w-3.5", updatingCenter && "animate-spin")} />}
             >
-              <Upload className={cn("h-3.5 w-3.5", updatingCenter && "animate-spin")} />
               {labels.updateCenter}
-            </button>
+            </Button>
           )}
           {onEditTags && labels.editTags && (
-            <button
+            <Button
+              size="sm"
               onClick={onEditTags}
-              className="inline-flex items-center gap-1.5 rounded-md bg-violet-600/90 px-2.5 py-1 text-[13px] font-medium text-white hover:bg-violet-500 transition-colors"
+              className="bg-violet-600/90 py-1 text-white hover:bg-violet-500"
+              icon={<Tag className="h-3.5 w-3.5" />}
             >
-              <Tag className="h-3.5 w-3.5" />
               {labels.editTags}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            size="sm"
             onClick={onDelete}
-            className="inline-flex items-center gap-1.5 rounded-md bg-red-600/90 px-2.5 py-1 text-[13px] font-medium text-white hover:bg-red-500 transition-colors"
+            className="bg-red-600/90 py-1 text-white hover:bg-red-500"
+            icon={<Trash2 className="h-3.5 w-3.5" />}
           >
-            <Trash2 className="h-3.5 w-3.5" />
             {labels.delete}
-          </button>
+          </Button>
           {showToggle && (
-            <button
+            <Button
+              size="sm"
               onClick={onToggle}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] font-medium text-white transition-colors",
+                "py-1 text-white",
                 anyDisabled
                   ? "bg-emerald-600/90 hover:bg-emerald-500"
                   : "bg-amber-600/90 hover:bg-amber-500"
               )}
+              icon={
+                anyDisabled
+                  ? <CheckCircle2 className="h-3.5 w-3.5" />
+                  : <Circle className="h-3.5 w-3.5" />
+              }
             >
-              {anyDisabled
-                ? <CheckCircle2 className="h-3.5 w-3.5" />
-                : <Circle className="h-3.5 w-3.5" />}
               {anyDisabled ? labels.enable : labels.disable}
-            </button>
+            </Button>
           )}
         </>
       )}
-      <button
+      <Button
+        size="sm"
+        variant="ghost"
         onClick={onSelectAll}
-        className="rounded-md px-2.5 py-1 text-[13px] font-medium text-muted hover:text-secondary hover:bg-surface-hover transition-colors"
+        className="py-1"
       >
         {isAllSelected ? labels.deselectAll : labels.selectAll}
-      </button>
-      <button
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
         onClick={onCancel}
-        className="rounded-md px-2.5 py-1 text-[13px] font-medium text-muted hover:text-secondary hover:bg-surface-hover transition-colors"
+        className="py-1"
       >
         {labels.cancel}
-      </button>
+      </Button>
     </div>
   );
 }
