@@ -31,6 +31,8 @@ import { getErrorMessage } from "../lib/error";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
 import { Button } from "../components/ui/Button";
+import { StatusPill } from "../components/ui/StatusPill";
+import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
 import type { WorkspaceConfig } from "./workspaceConfigs";
 
 function compactHomePath(path: string) {
@@ -104,9 +106,7 @@ function WorkspaceSkillCard({
           </div>
         )}
         <div className="flex shrink-0 items-center gap-2.5">
-          <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-medium", status.className)}>
-            {status.label}
-          </span>
+          <StatusPill className={status.className}>{status.label}</StatusPill>
           {fileCount > 0 && (
             <span className="flex items-center gap-1 text-[12px] text-faint">
               <FileText className="h-3 w-3" />
@@ -171,9 +171,7 @@ function WorkspaceSkillCard({
         )}
       </div>
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle px-3.5 py-2.5">
-        <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-medium", status.className)}>
-          {status.label}
-        </span>
+        <StatusPill className={status.className}>{status.label}</StatusPill>
         {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
       </div>
     </div>
@@ -181,31 +179,32 @@ function WorkspaceSkillCard({
 }
 
 function getLocalStatusMeta(t: (key: string) => string, status: ProjectSkill["sync_status"]) {
+  const tone = status as SyncStatusTone;
   switch (status) {
     case "in_sync":
       return {
         label: t("globalWorkspace.localSkills.status.inSync"),
-        className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+        className: syncStatusClass[tone],
       };
     case "project_newer":
       return {
         label: t("globalWorkspace.localSkills.status.localNewer"),
-        className: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        className: syncStatusClass[tone],
       };
     case "center_newer":
       return {
         label: t("globalWorkspace.localSkills.status.centerNewer"),
-        className: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+        className: syncStatusClass[tone],
       };
     case "diverged":
       return {
         label: t("globalWorkspace.localSkills.status.diverged"),
-        className: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+        className: syncStatusClass[tone],
       };
     default:
       return {
         label: t("globalWorkspace.localSkills.status.localOnly"),
-        className: "bg-surface-hover text-muted",
+        className: syncStatusClass.project_only,
       };
   }
 }
@@ -1018,9 +1017,11 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         meta={
           localDetailSkill ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className={cn("rounded-full px-2.5 py-1 text-[12px] font-medium", getLocalStatusMeta(t, localDetailSkill.sync_status).className)}>
+              <StatusPill
+                className={cn("px-2.5 py-1", getLocalStatusMeta(t, localDetailSkill.sync_status).className)}
+              >
                 {getLocalStatusMeta(t, localDetailSkill.sync_status).label}
-              </span>
+              </StatusPill>
               <span className="rounded-full bg-surface-hover px-2.5 py-1 text-[12px] text-muted">
                 {localDetailSkill.relative_path}
               </span>
@@ -1119,4 +1120,3 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     </div>
   );
 }
-

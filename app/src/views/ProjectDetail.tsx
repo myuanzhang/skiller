@@ -33,7 +33,9 @@ import { PresetBar } from "../components/PresetBar";
 import { SkillMarkdown } from "../components/SkillMarkdown";
 import { DocumentDiffViewer } from "../components/DocumentDiffViewer";
 import { Button } from "../components/ui/Button";
+import { StatusPill } from "../components/ui/StatusPill";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
+import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
 import { cn } from "../utils";
 import * as api from "../lib/tauri";
 import type { ProjectSkill, ManagedSkill, ProjectAgentTarget } from "../lib/tauri";
@@ -92,31 +94,32 @@ function getDefaultExportAgents(targets: ProjectAgentTarget[], savedValue?: stri
 }
 
 function getSyncStatusMeta(t: (key: string) => string, status: ProjectSkill["sync_status"]) {
+  const tone = status as SyncStatusTone;
   switch (status) {
     case "in_sync":
       return {
         label: t("project.syncStatus.inSync"),
-        className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+        className: syncStatusClass[tone],
       };
     case "project_newer":
       return {
         label: t("project.syncStatus.projectNewer"),
-        className: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        className: syncStatusClass[tone],
       };
     case "center_newer":
       return {
         label: t("project.syncStatus.centerNewer"),
-        className: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+        className: syncStatusClass[tone],
       };
     case "diverged":
       return {
         label: t("project.syncStatus.diverged"),
-        className: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+        className: syncStatusClass[tone],
       };
     default:
       return {
         label: t("project.syncStatus.projectOnly"),
-        className: "bg-surface-hover text-muted",
+        className: syncStatusClass.project_only,
       };
   }
 }
@@ -1146,9 +1149,7 @@ export function ProjectDetail() {
 
                   <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle px-3.5 py-2.5">
                     <div className="flex min-w-0 items-center gap-1.5">
-                      <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-medium", statusMeta.className)}>
-                        {statusMeta.label}
-                      </span>
+                      <StatusPill className={statusMeta.className}>{statusMeta.label}</StatusPill>
                       {skill.enabledCount === 0 && (
                         <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[12px] font-medium text-red-600 dark:text-red-300">
                           {t("project.disabled")}
@@ -1284,9 +1285,7 @@ export function ProjectDetail() {
                 )}
 
                 <div className="flex shrink-0 items-center gap-2.5">
-                  <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-medium", statusMeta.className)}>
-                    {statusMeta.label}
-                  </span>
+                  <StatusPill className={statusMeta.className}>{statusMeta.label}</StatusPill>
                   {skill.enabledCount === 0 && (
                     <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[12px] font-medium text-red-600 dark:text-red-300">
                       {t("project.disabled")}
