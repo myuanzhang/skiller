@@ -1,5 +1,6 @@
 import { Trash2, CheckCircle2, Circle, RotateCcw, Tag, Download, Upload } from "lucide-react";
 import { cn } from "../utils";
+import { Button } from "./ui/Button";
 
 interface MultiSelectToolbarLabels {
   hint: string;

@@ -1,14 +1,10 @@
 import type { ReactNode } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type {
-  DraggableAttributes,
-  DraggableSyntheticListeners,
-} from "@dnd-kit/core";
 
 export interface SortableItemRenderProps {
   /** Spread onto the drag-handle element to start a drag. */
-  dragHandleProps: DraggableAttributes & DraggableSyntheticListeners;
+  dragHandleProps: React.HTMLAttributes<HTMLElement>;
   isDragging: boolean;
 }
 
