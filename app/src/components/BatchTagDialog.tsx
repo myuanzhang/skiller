@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { X, Plus, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
+import { Modal } from "./ui/Modal";
 
 interface TaggableSkill {
   tags: string[];
@@ -85,9 +86,11 @@ export function BatchTagDialog({ open, skills, allTags, onClose, onApply }: Prop
   const hasChanges = adds.length > 0 || removes.length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface border border-border rounded-xl w-full max-w-[440px] p-5 shadow-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      contentClassName="bg-surface border border-border rounded-xl w-full max-w-[440px] p-5 shadow-2xl"
+    >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[13px] font-semibold text-primary flex items-center gap-2">
             <Tag className="w-4 h-4 text-accent-light" />
@@ -219,7 +222,6 @@ export function BatchTagDialog({ open, skills, allTags, onClose, onApply }: Prop
             {loading ? t("common.loading") : t("mySkills.batchTagDialog.apply")}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

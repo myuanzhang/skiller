@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Cloud, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
+import { Modal } from "./ui/Modal";
 
 interface Props {
   open: boolean;
@@ -36,9 +37,12 @@ export function GitSetupDialog({ open, hasRemote, onClose, onClone, onInit }: Pr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !loading && onClose()} />
-      <div className="relative bg-surface border border-border rounded-xl w-full max-w-lg p-5 shadow-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      closeOnBackdrop={!loading}
+      contentClassName="bg-surface border border-border rounded-xl w-full max-w-lg p-5 shadow-2xl"
+    >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-[14px] font-semibold text-primary">{t("settings.gitSetupTitle")}</h2>
@@ -96,8 +100,7 @@ export function GitSetupDialog({ open, hasRemote, onClose, onClone, onInit }: Pr
             {loading ? t("common.loading") : t("settings.gitSetupConfirm")}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

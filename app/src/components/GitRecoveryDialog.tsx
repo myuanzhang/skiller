@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "../utils";
 import type { GitUpstreamHealth } from "../lib/tauri";
+import { Modal } from "./ui/Modal";
 
 type RecoveryReason = GitUpstreamHealth | "conflict";
 
@@ -43,9 +44,12 @@ export function GitRecoveryDialog({ open, reason, onClose, onReclone }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !loading && onClose()} />
-      <div className="relative bg-surface border border-border rounded-xl w-full max-w-lg p-5 shadow-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      closeOnBackdrop={!loading}
+      contentClassName="bg-surface border border-border rounded-xl w-full max-w-lg p-5 shadow-2xl"
+    >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 text-[14px] font-semibold text-primary">
@@ -119,7 +123,6 @@ export function GitRecoveryDialog({ open, reason, onClose, onReclone }: Props) {
             {t("common.cancel")}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
