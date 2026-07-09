@@ -35,6 +35,7 @@ import { DocumentDiffViewer } from "../components/DocumentDiffViewer";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { DocumentSkeleton, SkeletonRows } from "../components/ui/Skeleton";
+import { SkillCardShell } from "../components/ui/SkillCardShell";
 import { StatusPill } from "../components/ui/StatusPill";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
@@ -1093,14 +1094,12 @@ export function ProjectDetail() {
 
             if (viewMode === "grid") {
               return (
-                <div
+                <SkillCardShell
                   key={skillKey}
-                  className={cn(
-                    "app-panel group relative flex h-full cursor-pointer flex-col overflow-hidden transition-all hover:border-border hover:bg-surface-hover",
-                    skill.enabledCount > 0 && "border-l-2 border-l-accent",
-                    skill.enabledCount === 0 && "opacity-60",
-                    isMultiSelect && isSelected && "ring-1 ring-accent border-accent/40"
-                  )}
+                  viewMode="grid"
+                  active={skill.enabledCount > 0}
+                  disabled={skill.enabledCount === 0}
+                  selected={isMultiSelect && isSelected}
                   onClick={() =>
                     isMultiSelect ? toggleSelect(skillKey) : handleOpenDetail(skill)
                   }
@@ -1233,20 +1232,18 @@ export function ProjectDetail() {
                       </div>
                     )}
                   </div>
-                </div>
+                </SkillCardShell>
               );
             }
 
             // List view
             return (
-              <div
+              <SkillCardShell
                 key={skillKey}
-                className={cn(
-                  "app-panel group flex cursor-pointer items-center gap-3.5 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
-                  skill.enabledCount > 0 && "border-l-2 border-l-accent",
-                  skill.enabledCount === 0 && "opacity-60",
-                  isMultiSelect && isSelected && "ring-1 ring-accent border-accent/40"
-                )}
+                viewMode="list"
+                active={skill.enabledCount > 0}
+                disabled={skill.enabledCount === 0}
+                selected={isMultiSelect && isSelected}
                 onClick={() =>
                   isMultiSelect ? toggleSelect(skillKey) : handleOpenDetail(skill)
                 }
@@ -1381,7 +1378,7 @@ export function ProjectDetail() {
                     </button>
                   </>
                 )}
-              </div>
+              </SkillCardShell>
             );
           })}
         </div>
