@@ -40,6 +40,7 @@ import { GitSetupDialog } from "../components/GitSetupDialog";
 import { GitRecoveryDialog } from "../components/GitRecoveryDialog";
 import { SyncDots } from "../components/SyncDots";
 import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
 import * as api from "../lib/tauri";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import type {
@@ -1590,13 +1591,12 @@ export function MySkills() {
       )}
 
       {filtered.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center pb-20 text-center">
-          <Layers className="mb-4 h-12 w-12 text-faint" />
-          <h3 className="mb-1.5 text-[14px] font-semibold text-tertiary">{t("mySkills.noSkills")}</h3>
-          <p className="text-[13px] text-muted">
-            {skills.length === 0 ? t("mySkills.addFirst") : t("mySkills.noMatch")}
-          </p>
-        </div>
+        <EmptyState
+          className="flex-1 pb-20"
+          icon={<Layers className="h-12 w-12" />}
+          title={t("mySkills.noSkills")}
+          description={skills.length === 0 ? t("mySkills.addFirst") : t("mySkills.noMatch")}
+        />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext

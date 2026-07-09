@@ -31,6 +31,8 @@ import { getErrorMessage } from "../lib/error";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
 import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { SkeletonRows } from "../components/ui/Skeleton";
 import { StatusPill } from "../components/ui/StatusPill";
 import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
 import type { WorkspaceConfig } from "./workspaceConfigs";
@@ -941,28 +943,24 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
       </div>
 
       {localSkillsLoading ? (
-        <div className="flex items-center gap-2 py-4 text-[13px] text-muted">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {t("common.loading")}
-        </div>
+        <SkeletonRows rows={viewMode === "grid" ? 6 : 5} className="pb-8" />
       ) : visibleLocalSkills.length === 0 ? (
-        <div className="flex min-h-[260px] flex-col items-center justify-center px-4 text-center">
-          <Globe className="mb-4 h-12 w-12 text-faint" />
-          <h3 className="mb-1.5 text-[14px] font-semibold text-tertiary">
-            {localSkills.length === 0
-              ? t("globalWorkspace.localSkills.empty")
-              : t("mySkills.noMatch")}
-          </h3>
-          {localSkills.length === 0 && (
-            <Button
-              onClick={() => setAddDialogOpen(true)}
-              icon={<Plus className="h-3.5 w-3.5" />}
-              className="mt-4 h-auto px-4 py-2"
-            >
-              {t("globalWorkspace.addSkill")}
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          className="min-h-[260px]"
+          icon={<Globe className="h-12 w-12" />}
+          title={localSkills.length === 0 ? t("globalWorkspace.localSkills.empty") : t("mySkills.noMatch")}
+          action={
+            localSkills.length === 0 ? (
+              <Button
+                onClick={() => setAddDialogOpen(true)}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-auto px-4 py-2"
+              >
+                {t("globalWorkspace.addSkill")}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div
           className={cn(

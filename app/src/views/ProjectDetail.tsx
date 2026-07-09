@@ -33,6 +33,8 @@ import { PresetBar } from "../components/PresetBar";
 import { SkillMarkdown } from "../components/SkillMarkdown";
 import { DocumentDiffViewer } from "../components/DocumentDiffViewer";
 import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { SkeletonRows } from "../components/ui/Skeleton";
 import { StatusPill } from "../components/ui/StatusPill";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
@@ -1041,31 +1043,28 @@ export function ProjectDetail() {
       )}
 
       {loading ? (
-        <div className="flex flex-1 flex-col items-center justify-center pb-20 text-center">
-          <div className="text-[13px] text-muted">{t("common.loading")}</div>
-        </div>
+        <SkeletonRows rows={viewMode === "grid" ? 6 : 5} className="pb-8" />
       ) : filtered.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center pb-20 text-center">
-          <Layers className="mb-4 h-12 w-12 text-faint" />
-          <h3 className="mb-1.5 text-[14px] font-semibold text-tertiary">
-            {groupedSkills.length === 0 ? t("project.noSkills") : t("mySkills.noMatch")}
-          </h3>
-          <p className="max-w-md text-[13px] text-muted">
-            {groupedSkills.length === 0 ? t("project.noSkillsHint") : ""}
-          </p>
-          {groupedSkills.length === 0 && (
-            <Button
-              onClick={() => {
-                setShowExportDialog(true);
-                dismissAddCallout();
-              }}
-              icon={<Plus className="h-3.5 w-3.5" />}
-              className="mt-4 h-auto px-4 py-2"
-            >
-              {t("project.addSkillsCta")}
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          className="flex-1 pb-20"
+          icon={<Layers className="h-12 w-12" />}
+          title={groupedSkills.length === 0 ? t("project.noSkills") : t("mySkills.noMatch")}
+          description={groupedSkills.length === 0 ? t("project.noSkillsHint") : undefined}
+          action={
+            groupedSkills.length === 0 ? (
+              <Button
+                onClick={() => {
+                  setShowExportDialog(true);
+                  dismissAddCallout();
+                }}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-auto px-4 py-2"
+              >
+                {t("project.addSkillsCta")}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div
           className={cn(
