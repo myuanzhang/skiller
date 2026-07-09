@@ -1491,14 +1491,20 @@ export function InstallSkills() {
 
       {activeTab === "git" && (
         <div className="animate-in fade-in duration-300">
-          <div className="app-panel max-w-lg p-5">
-            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface-hover">
-              <Github className="h-5 w-5 text-tertiary" />
+          <div className="app-panel max-w-2xl overflow-hidden">
+            <div className="border-b border-border-subtle px-4 py-3.5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-hover">
+                  <Github className="h-5 w-5 text-tertiary" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-[14px] font-semibold text-primary">{t("install.gitTitle")}</h2>
+                  <p className="mt-1 max-w-xl text-[13px] leading-5 text-muted">{t("install.gitDesc")}</p>
+                </div>
+              </div>
             </div>
-            <h2 className="mb-1 text-[14px] font-semibold text-primary">{t("install.gitTitle")}</h2>
-            <p className="mb-4 text-[13px] text-muted">{t("install.gitDesc")}</p>
 
-            <div className="space-y-3">
+            <div className="space-y-3 bg-bg-secondary/40 p-4">
               <div>
                 <label className="mb-1 block text-[13px] font-medium text-tertiary">
                   {t("install.repoUrl")}
@@ -1510,7 +1516,7 @@ export function InstallSkills() {
                   onKeyDown={(e) => { if (e.key === "Enter" && !gitLoading && gitUrl.trim()) handleGitPreview(); }}
                   placeholder={t("install.repoUrlPlaceholder")}
                   disabled={gitLoading}
-                  className="app-input w-full bg-background"
+                  className="app-input w-full bg-background font-mono"
                 />
               </div>
               {gitUrl.trim() && findInstalledByGitUrl(gitUrl) && (
@@ -1521,7 +1527,7 @@ export function InstallSkills() {
                   </span>
                 </div>
               )}
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-1">
                 {gitLoading ? (
                   <button
                     onClick={() => gitCancelKey && handleCancelInstall(gitCancelKey)}
