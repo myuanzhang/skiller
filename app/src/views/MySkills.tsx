@@ -41,6 +41,7 @@ import { GitRecoveryDialog } from "../components/GitRecoveryDialog";
 import { SyncDots } from "../components/SyncDots";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
+import { SkillCardShell } from "../components/ui/SkillCardShell";
 import * as api from "../lib/tauri";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import type {
@@ -1630,12 +1631,11 @@ export function MySkills() {
                   className={tagEditSkillId === skill.id ? "relative z-30" : undefined}
                 >
                 {(dragHandle) => (
-                <div
-                  className={cn(
-                    "app-panel group relative flex h-full cursor-pointer flex-col transition-all hover:border-border hover:bg-surface-hover",
-                    enabledInPreset && "border-l-2 border-l-accent",
-                    isMultiSelect && selectedIds.has(skill.id) && "ring-1 ring-accent border-accent/40"
-                  )}
+                <SkillCardShell
+                  viewMode="grid"
+                  active={enabledInPreset}
+                  selected={isMultiSelect && selectedIds.has(skill.id)}
+                  className={tagEditSkillId === skill.id ? "overflow-visible" : undefined}
                   onClick={() =>
                     isMultiSelect ? toggleSelect(skill.id) : openSkillDetailById(skill.id)
                   }
@@ -1831,7 +1831,7 @@ export function MySkills() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </SkillCardShell>
                 )}
                 </SortableSkillItem>
               );
@@ -1840,12 +1840,10 @@ export function MySkills() {
             return (
               <SortableSkillItem key={skill.id} id={skill.id} disabled={!canDrag}>
               {(dragHandle) => (
-              <div
-                className={cn(
-                  "app-panel group relative flex cursor-pointer items-center gap-3.5 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
-                  enabledInPreset && "border-l-2 border-l-accent",
-                  isMultiSelect && selectedIds.has(skill.id) && "ring-1 ring-accent border-accent/40"
-                )}
+              <SkillCardShell
+                viewMode="list"
+                active={enabledInPreset}
+                selected={isMultiSelect && selectedIds.has(skill.id)}
                 onClick={() =>
                   isMultiSelect ? toggleSelect(skill.id) : openSkillDetailById(skill.id)
                 }
@@ -1976,7 +1974,7 @@ export function MySkills() {
                     buttonClassName="p-0.5"
                   />
                 </div>
-              </div>
+              </SkillCardShell>
               )}
               </SortableSkillItem>
             );
