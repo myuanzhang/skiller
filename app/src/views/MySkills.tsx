@@ -39,6 +39,7 @@ import { BatchTagDialog } from "../components/BatchTagDialog";
 import { GitSetupDialog } from "../components/GitSetupDialog";
 import { GitRecoveryDialog } from "../components/GitRecoveryDialog";
 import { SyncDots } from "../components/SyncDots";
+import { Button } from "../components/ui/Button";
 import * as api from "../lib/tauri";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import type {
@@ -1318,91 +1319,100 @@ export function MySkills() {
                 ) : null}
 
                 {mode === "uninitialized" || mode === "needs_remote" ? (
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => setSetupOpen(true)}
                     disabled={!!gitLoading}
-                    className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
+                    className="px-3 py-2"
+                    icon={
+                      gitLoading === "start" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <GitBranch className="h-3.5 w-3.5" />
+                      )
+                    }
                   >
-                    {gitLoading === "start" ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <GitBranch className="h-3.5 w-3.5" />
-                    )}
                     {gitLoading === "start" ? t("settings.gitInitializing") : t("settings.gitStartBackup")}
-                  </button>
+                  </Button>
                 ) : mode === "needs_fix" ? (
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => {
                       setRecoveryReason(gitStatus?.upstream_health ?? "unrelated_histories");
                       setRecoveryOpen(true);
                     }}
                     disabled={!!gitLoading}
-                    className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium text-red-500 transition-colors hover:bg-surface-hover disabled:opacity-50"
+                    className="px-3 py-2 text-red-500 hover:text-red-500"
+                    icon={
+                      gitLoading === "recovery" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Wrench className="h-3.5 w-3.5" />
+                      )
+                    }
                   >
-                    {gitLoading === "recovery" ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Wrench className="h-3.5 w-3.5" />
-                    )}
                     {t("mySkills.gitRepoFixSetup")}
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={handleGitSync}
                     disabled={!!gitLoading || mode === "up_to_date"}
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium transition-colors hover:bg-surface-hover disabled:opacity-50",
+                      "px-3 py-2",
                       mode === "pending_changes" ? "text-amber-600 dark:text-amber-400" : "text-muted"
                     )}
+                    icon={
+                      gitLoading === "sync" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : mode === "up_to_date" ? (
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      ) : (
+                        <ArrowUpCircle className="h-3.5 w-3.5" />
+                      )
+                    }
                   >
-                    {gitLoading === "sync" ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : mode === "up_to_date" ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <ArrowUpCircle className="h-3.5 w-3.5" />
-                    )}
                     {gitLoading === "sync"
                       ? t("mySkills.gitRepoSyncing")
                       : mode === "up_to_date"
                         ? t("mySkills.gitRepoSynced")
                         : t("mySkills.gitRepoSync")}
-                  </button>
+                  </Button>
                 )}
 
                 {gitStatus?.is_repo ? (
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => setGitVersionsOpen((v) => !v)}
                     disabled={!!gitLoading}
                     title={snapshotWhen ? t("mySkills.gitInlineLastSnapshot", { when: snapshotWhen }) : undefined}
-                    className={cn(
-                      "ml-1 inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium transition-colors hover:bg-surface-hover disabled:opacity-50",
-                      gitVersionsOpen ? "text-secondary" : "text-muted"
-                    )}
+                    className={cn("ml-1 px-3 py-2", gitVersionsOpen ? "text-secondary" : "text-muted")}
+                    icon={<History className="h-3.5 w-3.5" />}
                   >
-                    <History className="h-3.5 w-3.5" />
                     {t("mySkills.gitSnapshots")}
-                  </button>
+                  </Button>
                 ) : null}
               </>
             );
           })()}
-          <button
+          <Button
+            variant="ghost"
             onClick={handleCheckAllUpdates}
             disabled={checkingAll}
-            className="ml-2 mr-2 inline-flex items-center gap-1 rounded-md border-l border-border-subtle pl-4 pr-3 py-2 text-[13px] font-medium text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
+            className="ml-2 mr-2 border-l border-border-subtle pl-4 pr-3 py-2"
+            icon={<RefreshCw className={cn("h-3.5 w-3.5", checkingAll && "animate-spin")} />}
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", checkingAll && "animate-spin")} />
             {t("mySkills.updateActions.checkAll")}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
             onClick={handleUpdateAvailableSkills}
             disabled={batchUpdating || availableUpdateCount === 0}
-            className="mr-2 inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium text-accent-light transition-colors hover:bg-accent-bg disabled:opacity-50"
+            className="mr-2 px-3 py-2 text-accent-light hover:bg-accent-bg hover:text-accent-light"
+            icon={<RotateCcw className={cn("h-3.5 w-3.5", batchUpdating && "animate-spin")} />}
           >
-            <RotateCcw className={cn("h-3.5 w-3.5", batchUpdating && "animate-spin")} />
             {t("mySkills.updateActions.updateAvailable", { count: availableUpdateCount })}
-          </button>
+          </Button>
           <button
             onClick={() => setViewMode("grid")}
             className={cn(
