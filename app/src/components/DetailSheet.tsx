@@ -40,7 +40,7 @@ export function DetailSheet({
         }
         onClick={onClose}
       />
-      <div className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-bg-secondary">
+      <div className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-bg-secondary shadow-modal">
         {onBack ? (
           <button
             onClick={onBack}

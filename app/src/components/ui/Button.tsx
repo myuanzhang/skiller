@@ -6,7 +6,8 @@ type Size = "sm" | "md";
 
 const base =
   "inline-flex items-center justify-center gap-1.5 rounded-md font-medium " +
-  "transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50";
+  "transition-colors outline-none active:scale-[0.98] disabled:cursor-not-allowed " +
+  "disabled:opacity-50 disabled:active:scale-100";
 
 const variantClass: Record<Variant, string> = {
   primary: "bg-accent text-white hover:bg-accent-hover",

@@ -26,6 +26,10 @@
     --color-accent-border: rgba(5,150,105,0.25);
     --color-danger: #DC2626;
     --color-danger-bg: rgba(220,38,38,0.08);
+    /* Elevation: subtle in light theme. */
+    --shadow-card: 0 1px 2px rgba(24,24,27,0.04), 0 1px 3px rgba(24,24,27,0.06);
+    --shadow-popover: 0 4px 12px rgba(24,24,27,0.10), 0 2px 4px rgba(24,24,27,0.06);
+    --shadow-modal: 0 24px 48px rgba(24,24,27,0.18), 0 8px 16px rgba(24,24,27,0.10);
   }
 
   /* Dark theme */
@@ -49,6 +53,10 @@
     --color-accent-border: rgba(16,185,129,0.25);
     --color-danger: #EF4444;
     --color-danger-bg: rgba(239,68,68,0.08);
+    /* Elevation: darker/wider in dark theme so it reads on near-black bg. */
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.40);
+    --shadow-popover: 0 4px 14px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.35);
+    --shadow-modal: 0 28px 56px rgba(0,0,0,0.60), 0 10px 20px rgba(0,0,0,0.45);
   }
 
   /* System preference fallback (when no .dark class and user chose "system") */
@@ -78,6 +86,29 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Lightweight enter animations. `animate-in` composes with modifier classes
+   * like `fade-in` and `slide-in-bottom` (a minimal subset of the
+   * tailwindcss-animate vocabulary already referenced in the codebase). */
+  @keyframes app-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes app-slide-in-bottom {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in {
+    animation-duration: 200ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: both;
+  }
+  .fade-in {
+    animation-name: app-fade-in;
+  }
+  .slide-in-bottom {
+    animation-name: app-slide-in-bottom;
   }
 
   .app-page {

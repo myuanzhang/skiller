@@ -65,6 +65,11 @@ export default {
         card: '8px',
         panel: '12px',
       },
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        popover: 'var(--shadow-popover)',
+        modal: 'var(--shadow-modal)',
+      },
     },
   },
   plugins: [],
