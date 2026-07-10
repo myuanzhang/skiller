@@ -39,8 +39,7 @@ import { GitToolbarControls, type GitToolbarMode } from "./my-skills/GitToolbarC
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
 import { SkillCardActions } from "./my-skills/SkillCardActions";
-import { SkillGridHoverActions } from "./my-skills/SkillGridHoverActions";
-import { SkillTagEditor } from "./my-skills/SkillTagEditor";
+import { SkillGridCard } from "./my-skills/SkillGridCard";
 import type {
   ManagedSkill,
   ToolInfo,
@@ -1442,144 +1441,47 @@ export function MySkills() {
                   className={tagEditSkillId === skill.id ? "relative z-30" : undefined}
                 >
                 {(dragHandle) => (
-                <SkillCardShell
-                  viewMode="grid"
+                <SkillGridCard
+                  skill={skill}
+                  displayName={displayName}
                   active={enabledInPreset}
                   selected={isMultiSelect && selectedIds.has(skill.id)}
-                  className={tagEditSkillId === skill.id ? "overflow-visible" : undefined}
+                  isMultiSelect={isMultiSelect}
+                  dragHandle={dragHandle}
+                  deleting={deletingIds.has(skill.id)}
+                  badge={badge}
+                  isMissingLocalSource={isMissingLocalSource}
+                  updating={updatingSkillId === skill.id}
+                  checking={checkingSkillId === skill.id}
+                  canRefresh={canRefresh(skill)}
+                  refreshLabel={refreshLabel(skill)}
+                  allTags={allTags}
+                  tagEditing={tagEditSkillId === skill.id}
+                  tagInput={tagInput}
+                  tagInputRef={tagInputRef}
+                  tagOptions={getTagOptions(skill, tagInput)}
+                  viewedPresetName={viewedPresetName}
+                  hasViewedPreset={!!viewedPreset}
+                  sourceIcon={sourceIcon(skill.source_type)}
+                  sourceLabel={sourceTypeLabel(skill)}
+                  tools={tools}
+                  pendingToolKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
                   onClick={() =>
                     isMultiSelect ? toggleSelect(skill.id) : openSkillDetailById(skill.id)
                   }
-                >
-                  <SkillGridHoverActions
-                    skill={skill}
-                    dragHandle={dragHandle}
-                    isMultiSelect={isMultiSelect}
-                    checking={checkingSkillId === skill.id}
-                    updating={updatingSkillId === skill.id}
-                    canRefresh={canRefresh(skill)}
-                    refreshLabel={refreshLabel(skill)}
-                    onCheckUpdate={handleCheckUpdate}
-                    onRefreshSkill={handleRefreshSkill}
-                    onDeleteSkill={handleDeleteSkill}
-                  />
-                  {deletingIds.has(skill.id) && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-surface/70 backdrop-blur-[1px]">
-                      <Loader2 className="h-5 w-5 animate-spin text-muted" />
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2.5 px-3.5 pr-20 pt-3 pb-1.5">
-                    {isMultiSelect && (
-                      selectedIds.has(skill.id)
-                        ? <SquareCheck className="h-3.5 w-3.5 shrink-0 text-accent" />
-                        : <Square className="h-3.5 w-3.5 shrink-0 text-faint" />
-                    )}
-                    <h3
-                      className="flex-1 truncate text-[14px] font-semibold text-primary group-hover:text-accent-light"
-                      title={displayName}
-                    >
-                      {displayName}
-                    </h3>
-                  </div>
-
-                  <div className="px-3.5 pb-3">
-                    <p className="text-[13px] leading-[18px] text-muted truncate">
-                      {skill.description || "—"}
-                    </p>
-                    {badge && (
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-[13px] font-medium",
-                            badge.className
-                          )}
-                        >
-                          {badge.label}
-                        </span>
-                        {isMissingLocalSource && (
-                          <>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleRelinkSource(skill); }}
-                              disabled={updatingSkillId === skill.id}
-                              className="rounded-full border border-border-subtle px-2 py-0.5 text-[12px] font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-50"
-                            >
-                              {t("mySkills.updateActions.relink")}
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDetachSource(skill); }}
-                              disabled={updatingSkillId === skill.id}
-                              className="rounded-full border border-border-subtle px-2 py-0.5 text-[12px] font-medium text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
-                            >
-                              {t("mySkills.updateActions.detachSource")}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    <SkillTagEditor
-                      skill={skill}
-                      allTags={allTags}
-                      editing={tagEditSkillId === skill.id}
-                      tagInput={tagInput}
-                      inputRef={tagInputRef}
-                      tagOptions={getTagOptions(skill, tagInput)}
-                      onTagInputChange={setTagInput}
-                      onAddTag={handleAddTag}
-                      onRemoveTag={handleRemoveTag}
-                      onStartEdit={(skillId) => { setTagEditSkillId(skillId); setTagInput(""); }}
-                      onCancelEdit={() => { setTagEditSkillId(null); setTagInput(""); }}
-                    />
-                  </div>
-
-                  <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle px-3.5 py-2.5">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="inline-flex shrink-0 items-center gap-1 text-[13px] text-muted">
-                        {sourceIcon(skill.source_type)}
-                        {sourceTypeLabel(skill)}
-                      </span>
-                      {enabledInPreset && (
-                        <>
-                          <span className="text-faint">·</span>
-                          <span className="truncate text-[13px] font-medium text-amber-600 dark:text-amber-400/80">
-                            {viewedPresetName}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <SyncDots
-                        skill={skill}
-                        tools={tools}
-                        limit={6}
-                        onToggle={
-                          isMultiSelect
-                            ? undefined
-                            : (tool, enabled) => handleToggleSkillTarget(skill, tool, enabled)
-                        }
-                        pendingKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
-                      />
-                      <SkillCardActions
-                        skill={skill}
-                        variant="grid"
-                        enabledInPreset={enabledInPreset}
-                        isMissingLocalSource={false}
-                        isMultiSelect={isMultiSelect}
-                        hasViewedPreset={!!viewedPreset}
-                        checking={checkingSkillId === skill.id}
-                        updating={updatingSkillId === skill.id}
-                        canRefresh={canRefresh(skill)}
-                        refreshLabel={refreshLabel(skill)}
-                        onRelinkSource={handleRelinkSource}
-                        onDetachSource={handleDetachSource}
-                        onTogglePreset={handleTogglePreset}
-                        onCheckUpdate={handleCheckUpdate}
-                        onRefreshSkill={handleRefreshSkill}
-                        onDeleteSkill={handleDeleteSkill}
-                      />
-                    </div>
-                  </div>
-                </SkillCardShell>
+                  onTagInputChange={setTagInput}
+                  onAddTag={handleAddTag}
+                  onRemoveTag={handleRemoveTag}
+                  onStartTagEdit={(skillId) => { setTagEditSkillId(skillId); setTagInput(""); }}
+                  onCancelTagEdit={() => { setTagEditSkillId(null); setTagInput(""); }}
+                  onRelinkSource={handleRelinkSource}
+                  onDetachSource={handleDetachSource}
+                  onTogglePreset={handleTogglePreset}
+                  onCheckUpdate={handleCheckUpdate}
+                  onRefreshSkill={handleRefreshSkill}
+                  onDeleteSkill={handleDeleteSkill}
+                  onToggleSkillTarget={(tool, enabled) => handleToggleSkillTarget(skill, tool, enabled)}
+                />
                 )}
                 </SortableSkillItem>
               );
