@@ -42,6 +42,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { SkillCardShell } from "../components/ui/SkillCardShell";
 import * as api from "../lib/tauri";
 import { getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
+import { GitSnapshotPanel } from "./my-skills/GitSnapshotPanel";
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
 import type {
@@ -1469,55 +1470,17 @@ export function MySkills() {
       )}
 
       {gitVersionsOpen && gitStatus?.is_repo && (
-        <div className="app-panel -mt-2 mb-2 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="min-w-0">
-              <h3 className="text-[13px] font-semibold text-secondary">{t("mySkills.gitVersionHistory")}</h3>
-              <div className="truncate text-[11px] text-faint">{renderCurrentVersionText()}</div>
-            </div>
-            <button
-              onClick={refreshGitVersions}
-              disabled={gitVersionsLoading || !!gitLoading}
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[13px] text-muted hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
-            >
-              <RefreshCw className={cn("h-3 w-3", gitVersionsLoading && "animate-spin")} />
-              {t("settings.refresh")}
-            </button>
-          </div>
-          {gitVersionsLoading ? (
-            <div className="py-2 text-[13px] text-muted">{t("mySkills.gitVersionLoading")}</div>
-          ) : gitVersions.length === 0 ? (
-            <div className="py-2 text-[13px] text-muted">{t("mySkills.gitVersionEmpty")}</div>
-          ) : (
-            <div className="max-h-64 space-y-1 overflow-auto pr-1">
-              {gitVersions.map((version) => (
-                <div
-                  key={version.tag}
-                  className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-secondary px-2.5 py-2"
-                >
-                  <div className="min-w-0 pr-3">
-                    <div className="truncate text-[13px] font-medium text-secondary">{displaySnapshotLabel(version.tag)}</div>
-                    <div className="truncate text-[12px] text-muted">
-                      {version.message || version.commit}
-                    </div>
-                    <div className="text-[11px] text-faint">
-                      {version.commit} · {formatGitDateTime(version.committed_at)}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setRestoreVersionTag(version.tag)}
-                    disabled={!!restoringVersionTag}
-                    className="shrink-0 rounded-md border border-border-subtle px-2 py-1 text-[12px] font-medium text-secondary hover:bg-surface-hover disabled:opacity-50"
-                  >
-                    {restoringVersionTag === version.tag
-                      ? t("mySkills.gitVersionRestoring")
-                      : t("mySkills.gitVersionRestore")}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <GitSnapshotPanel
+          currentVersionText={renderCurrentVersionText()}
+          versions={gitVersions}
+          loading={gitVersionsLoading}
+          gitBusy={!!gitLoading}
+          restoringVersionTag={restoringVersionTag}
+          onRefresh={refreshGitVersions}
+          onRestoreVersion={setRestoreVersionTag}
+          displaySnapshotLabel={displaySnapshotLabel}
+          formatGitDateTime={formatGitDateTime}
+        />
       )}
 
       {filtered.length === 0 ? (
