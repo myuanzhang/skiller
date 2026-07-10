@@ -23,7 +23,6 @@ import { useApp } from "../context/AppContext";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { TagRenameDialog } from "../components/TagRenameDialog";
-import { DeleteSkillButton } from "../components/DeleteSkillButton";
 import { SkillDetailPanel } from "../components/SkillDetailPanel";
 import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
 import { BatchTagDialog } from "../components/BatchTagDialog";
@@ -40,6 +39,7 @@ import { GitToolbarControls, type GitToolbarMode } from "./my-skills/GitToolbarC
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
 import { SkillCardActions } from "./my-skills/SkillCardActions";
+import { SkillGridHoverActions } from "./my-skills/SkillGridHoverActions";
 import { SkillTagEditor } from "./my-skills/SkillTagEditor";
 import type {
   ManagedSkill,
@@ -1451,32 +1451,18 @@ export function MySkills() {
                     isMultiSelect ? toggleSelect(skill.id) : openSkillDetailById(skill.id)
                   }
                 >
-                  <div className={cn("absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-border-subtle bg-surface px-1 py-0.5 opacity-0 shadow-sm transition-all", !isMultiSelect && "group-hover:opacity-100")}>
-                    {dragHandle}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleCheckUpdate(skill); }}
-                      disabled={checkingSkillId === skill.id}
-                      className="rounded p-1 text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
-                      title={t("mySkills.updateActions.check")}
-                    >
-                      <RefreshCw className={cn("h-3.5 w-3.5", checkingSkillId === skill.id && "animate-spin")} />
-                    </button>
-                    {canRefresh(skill) ? (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRefreshSkill(skill); }}
-                        disabled={updatingSkillId === skill.id}
-                        className="rounded p-1 text-accent-light transition-colors hover:bg-accent-bg disabled:opacity-50"
-                        title={refreshLabel(skill)}
-                      >
-                        <RotateCcw className={cn("h-3.5 w-3.5", updatingSkillId === skill.id && "animate-spin")} />
-                      </button>
-                    ) : null}
-                    <DeleteSkillButton
-                      skill={skill}
-                      onConfirm={handleDeleteSkill}
-                      buttonClassName="p-1"
-                    />
-                  </div>
+                  <SkillGridHoverActions
+                    skill={skill}
+                    dragHandle={dragHandle}
+                    isMultiSelect={isMultiSelect}
+                    checking={checkingSkillId === skill.id}
+                    updating={updatingSkillId === skill.id}
+                    canRefresh={canRefresh(skill)}
+                    refreshLabel={refreshLabel(skill)}
+                    onCheckUpdate={handleCheckUpdate}
+                    onRefreshSkill={handleRefreshSkill}
+                    onDeleteSkill={handleDeleteSkill}
+                  />
                   {deletingIds.has(skill.id) && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-surface/70 backdrop-blur-[1px]">
                       <Loader2 className="h-5 w-5 animate-spin text-muted" />
