@@ -10,8 +10,6 @@ import {
   RotateCcw,
   SquareCheck,
   GripVertical,
-  Pencil,
-  Trash2,
 } from "lucide-react";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
@@ -36,6 +34,7 @@ import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
 import { SkillGridCard } from "./my-skills/SkillGridCard";
 import { SkillListCard } from "./my-skills/SkillListCard";
+import { TagContextMenu } from "./my-skills/TagContextMenu";
 import type {
   ManagedSkill,
   ToolInfo,
@@ -1559,43 +1558,18 @@ export function MySkills() {
         onRename={handleRenameTag}
       />
       {tagMenu && (
-        <>
-          {/* Backdrop closes on left- or right-click outside the menu. Explicit
-              z-index (z-40/z-50) to avoid the macOS WKWebView stacking bug. */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setTagMenu(null)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setTagMenu(null);
-            }}
-          />
-          <div
-            className="fixed z-50 min-w-[140px] overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-2xl"
-            style={{ top: tagMenu.y, left: tagMenu.x }}
-          >
-            <button
-              onClick={() => {
-                setTagToRename(tagMenu.tag);
-                setTagMenu(null);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-secondary hover:bg-surface-hover"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              {t("mySkills.tags.renameTag")}
-            </button>
-            <button
-              onClick={() => {
-                setTagToDelete(tagMenu.tag);
-                setTagMenu(null);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-red-400 hover:bg-surface-hover"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              {t("mySkills.tags.deleteTag")}
-            </button>
-          </div>
-        </>
+        <TagContextMenu
+          menu={tagMenu}
+          onClose={() => setTagMenu(null)}
+          onRename={(tag) => {
+            setTagToRename(tag);
+            setTagMenu(null);
+          }}
+          onDelete={(tag) => {
+            setTagToDelete(tag);
+            setTagMenu(null);
+          }}
+        />
       )}
       <BatchTagDialog
         open={batchTagDialogOpen}
