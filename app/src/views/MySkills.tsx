@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Search,
   LayoutGrid,
   List,
   CheckCircle2,
@@ -20,7 +19,6 @@ import {
   SquareCheck,
   Square,
   GripVertical,
-  CircleSlash,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -43,7 +41,9 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { SkillCardShell } from "../components/ui/SkillCardShell";
 import * as api from "../lib/tauri";
-import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
+import { getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
+import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
+import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
 import type {
   ManagedSkill,
   ToolInfo,
@@ -1275,37 +1275,12 @@ export function MySkills() {
       </div>
 
       <div className="app-toolbar">
-        <div className="flex flex-1 gap-3">
-          <div className="relative w-full max-w-[280px]">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("mySkills.searchPlaceholder")}
-              className="app-input w-full pl-9 font-medium"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-          </div>
-
-          <div className="app-segmented">
-            {(["all", "enabled", "available"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setFilterMode(mode)}
-                className={cn(
-                  "app-segmented-button",
-                  filterMode === mode && "app-segmented-button-active"
-                )}
-              >
-                {t(`mySkills.filters.${mode}`)}
-              </button>
-            ))}
-          </div>
-
-        </div>
+        <MySkillsSearchControls
+          search={search}
+          onSearchChange={setSearch}
+          filterMode={filterMode}
+          onFilterModeChange={setFilterMode}
+        />
 
         <div className="app-segmented">
           {(() => {
@@ -1446,69 +1421,23 @@ export function MySkills() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1 px-1 -mt-2 -mb-3">
-        {(["local", "import", "git", "skillssh"] as const).map((src) => (
-          <button
-            key={src}
-            onClick={() => setSourceFilters(toggleFilter(sourceFilters, src))}
-            className={cn(
-              "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
-              sourceFilters.has(src)
-                ? "bg-accent text-white dark:bg-accent dark:text-white"
-                : "bg-surface-hover text-muted hover:text-secondary"
-            )}
-          >
-            {t(`mySkills.sourceFilter.${src}`)}
-          </button>
-        ))}
-        {allTags.length > 0 && (
-          <>
-            <span className="mx-0.5 h-3 w-px bg-border-subtle" />
-            {skills.some((s) => s.tags.length === 0) && (() => {
-              const isActive = tagFilters.has(UNTAGGED_FILTER);
-              return (
-                <button
-                  onClick={() => setTagFilters(toggleTagFilter(tagFilters, UNTAGGED_FILTER))}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
-                    isActive
-                      ? "bg-accent text-white dark:bg-accent dark:text-white"
-                      : "border border-dashed border-border text-muted hover:text-secondary"
-                  )}
-                  title={t("mySkills.tags.untagged")}
-                >
-                  <CircleSlash className="h-3 w-3" />
-                  {t("mySkills.tags.untagged")}
-                </button>
-              );
-            })()}
-            {allTags.map((tag) => {
-              const isActive = tagFilters.has(tag);
-              return (
-                <button
-                  key={tag}
-                  onClick={() => setTagFilters(toggleFilter(tagFilters, tag))}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setTagMenu({
-                      tag,
-                      x: Math.min(e.clientX, window.innerWidth - 160),
-                      y: Math.min(e.clientY, window.innerHeight - 90),
-                    });
-                  }}
-                  title={t("mySkills.tags.manageHint")}
-                  className={cn(
-                    "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
-                    isActive ? getTagActiveColor(tag, allTags) : getTagColor(tag, allTags)
-                  )}
-                >
-                  {tag}
-                </button>
-              );
-            })}
-          </>
-        )}
-      </div>
+      <MySkillsFilterBar
+        skills={skills}
+        sourceFilters={sourceFilters}
+        tagFilters={tagFilters}
+        allTags={allTags}
+        onSourceFilterToggle={(source) => setSourceFilters(toggleFilter(sourceFilters, source))}
+        onTagFilterToggle={(tag) => setTagFilters(toggleFilter(tagFilters, tag))}
+        onUntaggedFilterToggle={() => setTagFilters(toggleTagFilter(tagFilters, UNTAGGED_FILTER))}
+        onTagContextMenu={(tag, event) => {
+          event.preventDefault();
+          setTagMenu({
+            tag,
+            x: Math.min(event.clientX, window.innerWidth - 160),
+            y: Math.min(event.clientY, window.innerHeight - 90),
+          });
+        }}
+      />
 
       {isMultiSelect && (
         <MultiSelectToolbar
