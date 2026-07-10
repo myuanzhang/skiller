@@ -39,6 +39,7 @@ import { GitSnapshotPanel } from "./my-skills/GitSnapshotPanel";
 import { GitToolbarControls, type GitToolbarMode } from "./my-skills/GitToolbarControls";
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
+import { SkillCardActions } from "./my-skills/SkillCardActions";
 import { SkillTagEditor } from "./my-skills/SkillTagEditor";
 import type {
   ManagedSkill,
@@ -1572,18 +1573,24 @@ export function MySkills() {
                         }
                         pendingKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
                       />
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleTogglePreset(skill); }}
-                        disabled={!viewedPreset}
-                        className={cn(
-                          "rounded px-2 py-1 text-[13px] font-medium transition-colors outline-none",
-                          enabledInPreset
-                            ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                            : "text-muted hover:bg-surface-hover hover:text-secondary"
-                        )}
-                      >
-                        {enabledInPreset ? t("mySkills.enabledButton") : t("mySkills.enable")}
-                      </button>
+                      <SkillCardActions
+                        skill={skill}
+                        variant="grid"
+                        enabledInPreset={enabledInPreset}
+                        isMissingLocalSource={false}
+                        isMultiSelect={isMultiSelect}
+                        hasViewedPreset={!!viewedPreset}
+                        checking={checkingSkillId === skill.id}
+                        updating={updatingSkillId === skill.id}
+                        canRefresh={canRefresh(skill)}
+                        refreshLabel={refreshLabel(skill)}
+                        onRelinkSource={handleRelinkSource}
+                        onDetachSource={handleDetachSource}
+                        onTogglePreset={handleTogglePreset}
+                        onCheckUpdate={handleCheckUpdate}
+                        onRefreshSkill={handleRefreshSkill}
+                        onDeleteSkill={handleDeleteSkill}
+                      />
                     </div>
                   </div>
                 </SkillCardShell>
@@ -1674,61 +1681,24 @@ export function MySkills() {
                   )}
                 </div>
 
-                <div className={cn("flex shrink-0 items-center gap-1 opacity-0 transition-opacity", !isMultiSelect && "group-hover:opacity-100")}>
-                  {isMissingLocalSource && (
-                    <>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRelinkSource(skill); }}
-                        disabled={updatingSkillId === skill.id}
-                        className="rounded px-2 py-0.5 text-[13px] font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-50"
-                      >
-                        {t("mySkills.updateActions.relink")}
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDetachSource(skill); }}
-                        disabled={updatingSkillId === skill.id}
-                        className="rounded px-2 py-0.5 text-[13px] font-medium text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
-                      >
-                        {t("mySkills.updateActions.detachSource")}
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleTogglePreset(skill); }}
-                    disabled={!viewedPreset}
-                    className={cn(
-                      "rounded px-2 py-0.5 text-[13px] font-medium transition-colors outline-none",
-                      enabledInPreset
-                        ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                        : "text-muted hover:bg-surface-hover hover:text-secondary"
-                    )}
-                  >
-                    {enabledInPreset ? t("mySkills.enabledButton") : t("mySkills.enable")}
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleCheckUpdate(skill); }}
-                    disabled={checkingSkillId === skill.id}
-                    className="rounded p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
-                    title={t("mySkills.updateActions.check")}
-                  >
-                    <RefreshCw className={cn("h-3.5 w-3.5", checkingSkillId === skill.id && "animate-spin")} />
-                  </button>
-                  {canRefresh(skill) ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleRefreshSkill(skill); }}
-                      disabled={updatingSkillId === skill.id}
-                      className="rounded p-0.5 text-accent-light transition-colors hover:bg-accent-bg disabled:opacity-50"
-                      title={refreshLabel(skill)}
-                    >
-                      <RotateCcw className={cn("h-3.5 w-3.5", updatingSkillId === skill.id && "animate-spin")} />
-                    </button>
-                  ) : null}
-                  <DeleteSkillButton
-                    skill={skill}
-                    onConfirm={handleDeleteSkill}
-                    buttonClassName="p-0.5"
-                  />
-                </div>
+                <SkillCardActions
+                  skill={skill}
+                  variant="list"
+                  enabledInPreset={enabledInPreset}
+                  isMissingLocalSource={isMissingLocalSource}
+                  isMultiSelect={isMultiSelect}
+                  hasViewedPreset={!!viewedPreset}
+                  checking={checkingSkillId === skill.id}
+                  updating={updatingSkillId === skill.id}
+                  canRefresh={canRefresh(skill)}
+                  refreshLabel={refreshLabel(skill)}
+                  onRelinkSource={handleRelinkSource}
+                  onDetachSource={handleDetachSource}
+                  onTogglePreset={handleTogglePreset}
+                  onCheckUpdate={handleCheckUpdate}
+                  onRefreshSkill={handleRefreshSkill}
+                  onDeleteSkill={handleDeleteSkill}
+                />
               </SkillCardShell>
               )}
               </SortableSkillItem>
