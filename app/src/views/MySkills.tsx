@@ -17,24 +17,19 @@ import { toast } from "sonner";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
 import { useMultiSelect } from "../hooks/useMultiSelect";
-import { ConfirmDialog } from "../components/ConfirmDialog";
-import { TagRenameDialog } from "../components/TagRenameDialog";
 import { SkillDetailPanel } from "../components/SkillDetailPanel";
 import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
-import { BatchTagDialog } from "../components/BatchTagDialog";
-import { GitSetupDialog } from "../components/GitSetupDialog";
-import { GitRecoveryDialog } from "../components/GitRecoveryDialog";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import * as api from "../lib/tauri";
 import { UNTAGGED_FILTER } from "../lib/skillTags";
 import { GitSnapshotPanel } from "./my-skills/GitSnapshotPanel";
 import { GitToolbarControls, type GitToolbarMode } from "./my-skills/GitToolbarControls";
+import { MySkillsDialogs } from "./my-skills/MySkillsDialogs";
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
 import { SkillGridCard } from "./my-skills/SkillGridCard";
 import { SkillListCard } from "./my-skills/SkillListCard";
-import { TagContextMenu } from "./my-skills/TagContextMenu";
 import type {
   ManagedSkill,
   ToolInfo,
@@ -1538,67 +1533,45 @@ export function MySkills() {
         onProjectsChanged={refreshProjects}
       />
 
-      <ConfirmDialog
-        open={batchDeleteConfirm}
-        message={t("mySkills.batchDeleteConfirm", { count: selectedIds.size })}
-        onClose={() => setBatchDeleteConfirm(false)}
-        onConfirm={handleBatchDelete}
-      />
-      <ConfirmDialog
-        open={tagToDelete !== null}
-        title={t("mySkills.tags.deleteTag")}
-        message={t("mySkills.tags.deleteConfirm", { tag: tagToDelete || "" })}
-        onClose={() => setTagToDelete(null)}
-        onConfirm={handleDeleteTag}
-      />
-      <TagRenameDialog
-        open={tagToRename !== null}
-        currentName={tagToRename || ""}
-        onClose={() => setTagToRename(null)}
-        onRename={handleRenameTag}
-      />
-      {tagMenu && (
-        <TagContextMenu
-          menu={tagMenu}
-          onClose={() => setTagMenu(null)}
-          onRename={(tag) => {
-            setTagToRename(tag);
-            setTagMenu(null);
-          }}
-          onDelete={(tag) => {
-            setTagToDelete(tag);
-            setTagMenu(null);
-          }}
-        />
-      )}
-      <BatchTagDialog
-        open={batchTagDialogOpen}
-        skills={skills.filter((s) => selectedIds.has(s.id))}
+      <MySkillsDialogs
+        batchDeleteConfirm={batchDeleteConfirm}
+        selectedCount={selectedIds.size}
+        tagToDelete={tagToDelete}
+        tagToRename={tagToRename}
+        tagMenu={tagMenu}
+        batchTagDialogOpen={batchTagDialogOpen}
+        selectedSkills={skills.filter((s) => selectedIds.has(s.id))}
         allTags={allTags}
-        onClose={() => setBatchTagDialogOpen(false)}
-        onApply={handleBatchEditTags}
-      />
-      <ConfirmDialog
-        open={restoreVersionTag !== null}
-        title={t("mySkills.gitVersionRestoreTitle")}
-        message={t("mySkills.gitVersionRestoreConfirm", { tag: displaySnapshotLabel(restoreVersionTag || "") })}
-        tone="warning"
-        confirmLabel={t("mySkills.gitVersionRestore")}
-        onClose={() => setRestoreVersionTag(null)}
-        onConfirm={handleRestoreVersion}
-      />
-      <GitSetupDialog
-        open={setupOpen}
-        hasRemote={!!gitRemoteConfig}
-        onClose={() => setSetupOpen(false)}
-        onClone={handleSetupClone}
-        onInit={handleSetupInit}
-      />
-      <GitRecoveryDialog
-        open={recoveryOpen}
-        reason={recoveryReason}
-        onClose={() => setRecoveryOpen(false)}
-        onReclone={handleRecoveryReclone}
+        restoreVersionTag={restoreVersionTag}
+        setupOpen={setupOpen}
+        hasGitRemote={!!gitRemoteConfig}
+        recoveryOpen={recoveryOpen}
+        recoveryReason={recoveryReason}
+        displaySnapshotLabel={displaySnapshotLabel}
+        onCloseBatchDelete={() => setBatchDeleteConfirm(false)}
+        onConfirmBatchDelete={handleBatchDelete}
+        onCloseTagDelete={() => setTagToDelete(null)}
+        onConfirmTagDelete={handleDeleteTag}
+        onCloseTagRename={() => setTagToRename(null)}
+        onRenameTag={handleRenameTag}
+        onCloseTagMenu={() => setTagMenu(null)}
+        onTagMenuRename={(tag) => {
+          setTagToRename(tag);
+          setTagMenu(null);
+        }}
+        onTagMenuDelete={(tag) => {
+          setTagToDelete(tag);
+          setTagMenu(null);
+        }}
+        onCloseBatchTagDialog={() => setBatchTagDialogOpen(false)}
+        onApplyBatchTags={handleBatchEditTags}
+        onCloseRestoreVersion={() => setRestoreVersionTag(null)}
+        onConfirmRestoreVersion={handleRestoreVersion}
+        onCloseSetup={() => setSetupOpen(false)}
+        onSetupClone={handleSetupClone}
+        onSetupInit={handleSetupInit}
+        onCloseRecovery={() => setRecoveryOpen(false)}
+        onRecoveryReclone={handleRecoveryReclone}
       />
     </div>
   );
