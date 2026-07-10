@@ -2,17 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutGrid,
   List,
-  CheckCircle2,
   Github,
   HardDrive,
   Globe,
   Layers,
   RefreshCw,
   RotateCcw,
-  GitBranch,
-  History,
-  ArrowUpCircle,
-  Wrench,
   Loader2,
   X,
   Plus,
@@ -43,6 +38,7 @@ import { SkillCardShell } from "../components/ui/SkillCardShell";
 import * as api from "../lib/tauri";
 import { getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { GitSnapshotPanel } from "./my-skills/GitSnapshotPanel";
+import { GitToolbarControls, type GitToolbarMode } from "./my-skills/GitToolbarControls";
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
 import type {
@@ -1102,14 +1098,6 @@ export function MySkills() {
     }
   };
 
-  type GitToolbarMode =
-    | "loading"
-    | "uninitialized"
-    | "needs_remote"
-    | "needs_fix"
-    | "up_to_date"
-    | "pending_changes";
-
   const getGitToolbarMode = (): GitToolbarMode => {
     if (!gitStatus) return "loading";
     if (!gitStatus.is_repo) return "uninitialized";
@@ -1286,91 +1274,22 @@ export function MySkills() {
         <div className="app-segmented">
           {(() => {
             const mode = getGitToolbarMode();
-            const inlineStatus = renderGitInlineStatus(mode);
-            const snapshotWhen = formatSnapshotWhen(gitStatus?.current_snapshot_tag ?? null);
             return (
-              <>
-                {inlineStatus ? (
-                  <span className="mr-0.5 inline-flex items-center px-1 leading-tight">
-                    {inlineStatus}
-                  </span>
-                ) : null}
-
-                {mode === "uninitialized" || mode === "needs_remote" ? (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setSetupOpen(true)}
-                    disabled={!!gitLoading}
-                    className="px-3 py-2"
-                    icon={
-                      gitLoading === "start" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <GitBranch className="h-3.5 w-3.5" />
-                      )
-                    }
-                  >
-                    {gitLoading === "start" ? t("settings.gitInitializing") : t("settings.gitStartBackup")}
-                  </Button>
-                ) : mode === "needs_fix" ? (
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setRecoveryReason(gitStatus?.upstream_health ?? "unrelated_histories");
-                      setRecoveryOpen(true);
-                    }}
-                    disabled={!!gitLoading}
-                    className="px-3 py-2 text-red-500 hover:text-red-500"
-                    icon={
-                      gitLoading === "recovery" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Wrench className="h-3.5 w-3.5" />
-                      )
-                    }
-                  >
-                    {t("mySkills.gitRepoFixSetup")}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    onClick={handleGitSync}
-                    disabled={!!gitLoading || mode === "up_to_date"}
-                    className={cn(
-                      "px-3 py-2",
-                      mode === "pending_changes" ? "text-amber-600 dark:text-amber-400" : "text-muted"
-                    )}
-                    icon={
-                      gitLoading === "sync" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : mode === "up_to_date" ? (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      ) : (
-                        <ArrowUpCircle className="h-3.5 w-3.5" />
-                      )
-                    }
-                  >
-                    {gitLoading === "sync"
-                      ? t("mySkills.gitRepoSyncing")
-                      : mode === "up_to_date"
-                        ? t("mySkills.gitRepoSynced")
-                        : t("mySkills.gitRepoSync")}
-                  </Button>
-                )}
-
-                {gitStatus?.is_repo ? (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setGitVersionsOpen((v) => !v)}
-                    disabled={!!gitLoading}
-                    title={snapshotWhen ? t("mySkills.gitInlineLastSnapshot", { when: snapshotWhen }) : undefined}
-                    className={cn("ml-1 px-3 py-2", gitVersionsOpen ? "text-secondary" : "text-muted")}
-                    icon={<History className="h-3.5 w-3.5" />}
-                  >
-                    {t("mySkills.gitSnapshots")}
-                  </Button>
-                ) : null}
-              </>
+              <GitToolbarControls
+                mode={mode}
+                inlineStatus={renderGitInlineStatus(mode)}
+                gitLoading={gitLoading}
+                isRepo={!!gitStatus?.is_repo}
+                snapshotWhen={formatSnapshotWhen(gitStatus?.current_snapshot_tag ?? null)}
+                gitVersionsOpen={gitVersionsOpen}
+                onOpenSetup={() => setSetupOpen(true)}
+                onOpenRecovery={() => {
+                  setRecoveryReason(gitStatus?.upstream_health ?? "unrelated_histories");
+                  setRecoveryOpen(true);
+                }}
+                onSync={handleGitSync}
+                onToggleSnapshots={() => setGitVersionsOpen((value) => !value)}
+              />
             );
           })()}
           <Button
