@@ -8,9 +8,7 @@ import {
   Layers,
   RefreshCw,
   RotateCcw,
-  Loader2,
   SquareCheck,
-  Square,
   GripVertical,
   Pencil,
   Trash2,
@@ -28,18 +26,16 @@ import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
 import { BatchTagDialog } from "../components/BatchTagDialog";
 import { GitSetupDialog } from "../components/GitSetupDialog";
 import { GitRecoveryDialog } from "../components/GitRecoveryDialog";
-import { SyncDots } from "../components/SyncDots";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { SkillCardShell } from "../components/ui/SkillCardShell";
 import * as api from "../lib/tauri";
-import { getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
+import { UNTAGGED_FILTER } from "../lib/skillTags";
 import { GitSnapshotPanel } from "./my-skills/GitSnapshotPanel";
 import { GitToolbarControls, type GitToolbarMode } from "./my-skills/GitToolbarControls";
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
-import { SkillCardActions } from "./my-skills/SkillCardActions";
 import { SkillGridCard } from "./my-skills/SkillGridCard";
+import { SkillListCard } from "./my-skills/SkillListCard";
 import type {
   ManagedSkill,
   ToolInfo,
@@ -1490,104 +1486,38 @@ export function MySkills() {
             return (
               <SortableSkillItem key={skill.id} id={skill.id} disabled={!canDrag}>
               {(dragHandle) => (
-              <SkillCardShell
-                viewMode="list"
+              <SkillListCard
+                skill={skill}
+                displayName={displayName}
                 active={enabledInPreset}
                 selected={isMultiSelect && selectedIds.has(skill.id)}
+                isMultiSelect={isMultiSelect}
+                dragHandle={dragHandle}
+                deleting={deletingIds.has(skill.id)}
+                badge={badge}
+                isMissingLocalSource={isMissingLocalSource}
+                updating={updatingSkillId === skill.id}
+                checking={checkingSkillId === skill.id}
+                canRefresh={canRefresh(skill)}
+                refreshLabel={refreshLabel(skill)}
+                allTags={allTags}
+                viewedPresetName={viewedPresetName}
+                hasViewedPreset={!!viewedPreset}
+                sourceIcon={sourceIcon(skill.source_type)}
+                sourceLabel={sourceTypeLabel(skill)}
+                tools={tools}
+                pendingToolKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
                 onClick={() =>
                   isMultiSelect ? toggleSelect(skill.id) : openSkillDetailById(skill.id)
                 }
-              >
-                {deletingIds.has(skill.id) && (
-                  <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-surface/70 backdrop-blur-[1px]">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted" />
-                  </div>
-                )}
-                {dragHandle}
-                {isMultiSelect && (
-                  selectedIds.has(skill.id)
-                    ? <SquareCheck className="h-3.5 w-3.5 shrink-0 text-accent" />
-                    : <Square className="h-3.5 w-3.5 shrink-0 text-faint" />
-                )}
-
-                <h3
-                  className="w-[180px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
-                  title={displayName}
-                >
-                  {displayName}
-                </h3>
-
-                <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
-                  {skill.description || "—"}
-                </p>
-
-                <div className="flex shrink-0 items-center gap-1.5">
-                  {skill.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className={cn(
-                        "inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium",
-                        getTagColor(tag, allTags)
-                      )}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2.5">
-                  {badge && (
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[12px] font-medium",
-                        badge.className
-                      )}
-                    >
-                      {badge.label}
-                    </span>
-                  )}
-                  <SyncDots
-                    skill={skill}
-                    tools={tools}
-                    limit={6}
-                    size="sm"
-                    onToggle={
-                      isMultiSelect
-                        ? undefined
-                        : (tool, enabled) => handleToggleSkillTarget(skill, tool, enabled)
-                    }
-                    pendingKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
-                  />
-                  <span className="inline-flex items-center gap-1 text-[13px] text-muted">
-                    {sourceIcon(skill.source_type)}
-                    {sourceTypeLabel(skill)}
-                  </span>
-                  {enabledInPreset && (
-                    <span className="text-[13px] font-medium text-amber-600 dark:text-amber-400/80">
-                      {viewedPresetName}
-                    </span>
-                  )}
-                </div>
-
-                <SkillCardActions
-                  skill={skill}
-                  variant="list"
-                  enabledInPreset={enabledInPreset}
-                  isMissingLocalSource={isMissingLocalSource}
-                  isMultiSelect={isMultiSelect}
-                  hasViewedPreset={!!viewedPreset}
-                  checking={checkingSkillId === skill.id}
-                  updating={updatingSkillId === skill.id}
-                  canRefresh={canRefresh(skill)}
-                  refreshLabel={refreshLabel(skill)}
-                  onRelinkSource={handleRelinkSource}
-                  onDetachSource={handleDetachSource}
-                  onTogglePreset={handleTogglePreset}
-                  onCheckUpdate={handleCheckUpdate}
-                  onRefreshSkill={handleRefreshSkill}
-                  onDeleteSkill={handleDeleteSkill}
-                />
-              </SkillCardShell>
+                onRelinkSource={handleRelinkSource}
+                onDetachSource={handleDetachSource}
+                onTogglePreset={handleTogglePreset}
+                onCheckUpdate={handleCheckUpdate}
+                onRefreshSkill={handleRefreshSkill}
+                onDeleteSkill={handleDeleteSkill}
+                onToggleSkillTarget={(tool, enabled) => handleToggleSkillTarget(skill, tool, enabled)}
+              />
               )}
               </SortableSkillItem>
             );
