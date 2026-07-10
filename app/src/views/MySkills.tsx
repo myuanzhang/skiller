@@ -9,8 +9,6 @@ import {
   RefreshCw,
   RotateCcw,
   Loader2,
-  X,
-  Plus,
   SquareCheck,
   Square,
   GripVertical,
@@ -41,6 +39,7 @@ import { GitSnapshotPanel } from "./my-skills/GitSnapshotPanel";
 import { GitToolbarControls, type GitToolbarMode } from "./my-skills/GitToolbarControls";
 import { MySkillsFilterBar } from "./my-skills/MySkillsFilterBar";
 import { MySkillsSearchControls } from "./my-skills/MySkillsSearchControls";
+import { SkillTagEditor } from "./my-skills/SkillTagEditor";
 import type {
   ManagedSkill,
   ToolInfo,
@@ -1531,74 +1530,19 @@ export function MySkills() {
                         )}
                       </div>
                     )}
-                    <div className="mt-2 flex flex-wrap items-center gap-1">
-                      {skill.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className={cn(
-                            "group/tag inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                            getTagColor(tag, allTags)
-                          )}
-                        >
-                          {tag}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleRemoveTag(skill, tag); }}
-                            className="hidden group-hover/tag:inline-flex rounded-full p-0 opacity-60 hover:opacity-100"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </span>
-                      ))}
-                      {tagEditSkillId === skill.id ? (
-                        <div className="relative" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            ref={tagInputRef}
-                            type="text"
-                            value={tagInput}
-                            onChange={(e) => setTagInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") { handleAddTag(skill); }
-                              if (e.key === "Escape") { setTagEditSkillId(null); setTagInput(""); }
-                            }}
-                            onBlur={() => {
-                              if (tagInput.trim()) handleAddTag(skill);
-                              else { setTagEditSkillId(null); setTagInput(""); }
-                            }}
-                            placeholder={t("mySkills.tags.addTag")}
-                            className="h-5 w-28 rounded-full border border-border-subtle bg-transparent px-1.5 text-[11px] text-secondary outline-none focus:border-accent"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            autoComplete="off"
-                            spellCheck={false}
-                            autoFocus
-                          />
-                          {getTagOptions(skill, tagInput).length > 0 && (
-                            <div className="absolute left-0 top-6 z-50 max-h-56 min-w-[112px] max-w-[180px] overflow-y-auto rounded-md border border-border-subtle bg-surface p-1 shadow-lg">
-                              {getTagOptions(skill, tagInput).map((tagOption) => (
-                                <button
-                                  key={tagOption}
-                                  type="button"
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  onClick={(e) => { e.stopPropagation(); handleAddTag(skill, tagOption); }}
-                                  className="w-full truncate rounded px-1.5 py-1 text-left text-[11px] text-secondary hover:bg-surface-hover"
-                                  title={tagOption}
-                                >
-                                  {tagOption}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setTagEditSkillId(skill.id); setTagInput(""); }}
-                          className="inline-flex items-center rounded-full p-0.5 text-faint transition-colors hover:text-muted opacity-0 group-hover:opacity-100"
-                          title={t("mySkills.tags.addTag")}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
+                    <SkillTagEditor
+                      skill={skill}
+                      allTags={allTags}
+                      editing={tagEditSkillId === skill.id}
+                      tagInput={tagInput}
+                      inputRef={tagInputRef}
+                      tagOptions={getTagOptions(skill, tagInput)}
+                      onTagInputChange={setTagInput}
+                      onAddTag={handleAddTag}
+                      onRemoveTag={handleRemoveTag}
+                      onStartEdit={(skillId) => { setTagEditSkillId(skillId); setTagInput(""); }}
+                      onCancelEdit={() => { setTagEditSkillId(null); setTagInput(""); }}
+                    />
                   </div>
 
                   <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle px-3.5 py-2.5">
