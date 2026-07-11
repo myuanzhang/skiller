@@ -2297,6 +2297,51 @@ fn remove_path_if_exists(path: &Path) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Detect broken symlinks in a specific agent's skill directory.
+/// This command scans the given directory for symlinks that point to non-existent targets,
+/// and returns a list of broken symlink names.
+#[tauri::command]
+pub async fn detect_broken_symlinks(
+    agent_skills_dir: String,
+) -> Result<Vec<String>, AppError> {
+    let dir_path = PathBuf::from(&agent_skills_dir);
+
+    if !dir_path.exists() || !dir_path.is_dir() {
+        return Ok(vec![]);
+    }
+
+    let mut broken_symlinks = Vec::new();
+
+    // Scan for broken symlinks in this directory
+    if let Ok(entries) = std::fs::read_dir(&dir_path) {
+        for entry in entries.flatten() {
+            let entry_path = entry.path();
+            let Some(skill_name) = entry_path.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            if skill_name.starts_with('.') {
+                continue;
+            }
+
+            if entry_path.is_symlink() {
+                if let Ok(target) = std::fs::read_link(&entry_path) {
+                    let resolved_target = if target.is_absolute() {
+                        target.clone()
+                    } else {
+                        dir_path.join(&target)
+                    };
+
+                    if !resolved_target.exists() {
+                        broken_symlinks.push(skill_name.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(broken_symlinks)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2358,6 +2403,25 @@ mod tests {
             last_checked_at: None,
             last_check_error: None,
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn detect_broken_symlinks_skips_hidden_entries() {
+        let temp = tempdir().unwrap();
+        let skills_dir = temp.path().join("skills");
+        fs::create_dir_all(&skills_dir).unwrap();
+        std::os::unix::fs::symlink(temp.path().join("missing-cache"), skills_dir.join(".ruff_cache"))
+            .unwrap();
+        std::os::unix::fs::symlink(temp.path().join("missing-skill"), skills_dir.join("AFFiNE"))
+            .unwrap();
+
+        let broken = tauri::async_runtime::block_on(detect_broken_symlinks(
+            skills_dir.to_string_lossy().to_string(),
+        ))
+        .unwrap();
+
+        assert_eq!(broken, vec!["AFFiNE".to_string()]);
     }
 
     #[test]

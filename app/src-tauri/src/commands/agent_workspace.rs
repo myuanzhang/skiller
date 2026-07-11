@@ -477,6 +477,18 @@ fn delete_agent_local_skill(
     skill_relative_path: &str,
 ) -> Result<(), AppError> {
     let adapter = adapter_for_agent(store, agent)?;
+    ensure_safe_skill_relative_path(skill_relative_path)?;
+    let skills_root = adapter.skills_dir();
+    let requested_path = skills_root.join(skill_relative_path);
+    ensure_agent_skill_path(&requested_path, &skills_root)?;
+
+    if let Ok(metadata) = std::fs::symlink_metadata(&requested_path) {
+        if metadata.file_type().is_symlink() && !requested_path.exists() {
+            sync_engine::remove_target(&requested_path).map_err(AppError::io)?;
+            return Ok(());
+        }
+    }
+
     let skill = find_agent_skill(&adapter, skill_relative_path)?;
 
     let all_managed = store.get_all_skills().unwrap_or_default();
@@ -492,7 +504,6 @@ fn delete_agent_local_skill(
         }
     }
 
-    let skills_root = adapter.skills_dir();
     let target_path = PathBuf::from(&skill.path);
     ensure_agent_skill_path(&target_path, &skills_root)?;
     sync_engine::remove_target(&target_path).map_err(AppError::io)?;
@@ -502,7 +513,7 @@ fn delete_agent_local_skill(
 #[cfg(test)]
 mod tests {
     use super::{
-        backfill_stranded_agent_targets, enrich_center_status,
+        backfill_stranded_agent_targets, delete_agent_local_skill, enrich_center_status,
         import_agent_local_skill_to_center, update_agent_local_skill_from_center,
     };
     use crate::core::content_hash;
@@ -510,6 +521,38 @@ mod tests {
     use crate::core::skill_store::{ScenarioRecord, SkillRecord, SkillStore};
     use crate::core::{central_repo, installer};
     use std::collections::HashMap;
+
+    #[cfg(unix)]
+    #[test]
+    fn deleting_agent_local_skill_removes_broken_symlink() {
+        let temp = tempfile::tempdir().unwrap();
+        let db_path = temp.path().join("store.db");
+        let store = SkillStore::new(&db_path).unwrap();
+
+        let skills_root = temp.path().join("agent-skills");
+        std::fs::create_dir_all(&skills_root).unwrap();
+        let broken_link = skills_root.join(".ruff_cache");
+        std::os::unix::fs::symlink(temp.path().join("missing-target"), &broken_link).unwrap();
+
+        store
+            .set_setting(
+                "custom_tools",
+                &serde_json::json!([
+                    {
+                        "key": "test_agent",
+                        "display_name": "Test Agent",
+                        "skills_dir": skills_root.to_string_lossy(),
+                        "project_relative_skills_dir": ".test-agent/skills"
+                    }
+                ])
+                .to_string(),
+            )
+            .unwrap();
+
+        delete_agent_local_skill(&store, "test_agent", ".ruff_cache").unwrap();
+
+        assert!(std::fs::symlink_metadata(&broken_link).is_err());
+    }
 
     #[test]
     fn importing_agent_local_skill_attaches_target_but_not_scenario() {

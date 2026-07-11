@@ -42,6 +42,29 @@ function compactHomePath(path: string) {
   return path.replace(/^\/Users\/[^/]+/, "~");
 }
 
+function buildBrokenSymlinkSkill(
+  name: string,
+  skillsDir: string,
+  agent: string,
+  agentDisplayName: string
+): ProjectSkill {
+  return {
+    name,
+    dir_name: name,
+    relative_path: name,
+    description: `${compactHomePath(skillsDir)}/${name}`,
+    path: `${skillsDir}/${name}`,
+    files: [],
+    enabled: true,
+    agent,
+    agent_display_name: agentDisplayName,
+    tags: [],
+    in_center: false,
+    sync_status: "project_only",
+    center_skill_id: null,
+  };
+}
+
 interface WorkspaceSkillCardTag {
   label: string;
   className: string;
@@ -60,6 +83,7 @@ function WorkspaceSkillCard({
   status,
   fileCount = 0,
   active = false,
+  isBroken = false,
   actions,
   actionsHover = false,
   onClick,
@@ -71,20 +95,32 @@ function WorkspaceSkillCard({
   status: WorkspaceSkillCardStatus;
   fileCount?: number;
   active?: boolean;
+  isBroken?: boolean;
   actions?: ReactNode;
   actionsHover?: boolean;
-  onClick: () => void;
+  onClick?: () => void;
 }) {
   if (viewMode === "list") {
     return (
-      <SkillCardShell viewMode="list" active={active} onClick={onClick}>
+      <SkillCardShell
+        viewMode="list"
+        active={active}
+        onClick={onClick}
+        className={cn(isBroken && "cursor-default border-red-500/40 bg-red-500/5 hover:border-red-500/50 hover:bg-red-500/10")}
+      >
         <h3
-          className="w-[180px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
+          className={cn(
+            "w-[180px] shrink-0 truncate text-[14px] font-semibold",
+            isBroken ? "text-red-600 line-through decoration-red-500/70 dark:text-red-300" : "text-secondary group-hover:text-primary"
+          )}
           title={title}
         >
           {title}
         </h3>
-        <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
+        <p className={cn(
+          "min-w-0 flex-1 truncate text-[13px]",
+          isBroken ? "text-red-600/80 line-through decoration-red-500/50 dark:text-red-300/80" : "text-muted"
+        )}>
           {description || "-"}
         </p>
         {tags.length > 0 && (
@@ -126,10 +162,18 @@ function WorkspaceSkillCard({
   }
 
   return (
-    <SkillCardShell viewMode="grid" active={active} onClick={onClick}>
+    <SkillCardShell
+      viewMode="grid"
+      active={active}
+      onClick={onClick}
+      className={cn(isBroken && "cursor-default border-red-500/40 bg-red-500/5 hover:border-red-500/50 hover:bg-red-500/10")}
+    >
       <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
         <h3
-          className="flex-1 truncate text-[14px] font-semibold text-primary group-hover:text-accent-light"
+          className={cn(
+            "flex-1 truncate text-[14px] font-semibold",
+            isBroken ? "text-red-600 line-through decoration-red-500/70 dark:text-red-300" : "text-primary group-hover:text-accent-light"
+          )}
           title={title}
         >
           {title}
@@ -142,7 +186,10 @@ function WorkspaceSkillCard({
         )}
       </div>
       <div className="px-3.5 pb-3">
-        <p className="truncate text-[13px] leading-[18px] text-muted">
+        <p className={cn(
+          "truncate text-[13px] leading-[18px]",
+          isBroken ? "text-red-600/80 line-through decoration-red-500/50 dark:text-red-300/80" : "text-muted"
+        )}>
           {description || "-"}
         </p>
         {tags.length > 0 && (
@@ -214,6 +261,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const [removingLocalSkillId, setRemovingLocalSkillId] = useState<string | null>(null);
   const [localSkills, setLocalSkills] = useState<ProjectSkill[]>([]);
   const [localSkillsLoading, setLocalSkillsLoading] = useState(false);
+  const [brokenSymlinks, setBrokenSymlinks] = useState<string[]>([]);
   const [localActionKey, setLocalActionKey] = useState<string | null>(null);
   const [localDetailSkill, setLocalDetailSkill] = useState<ProjectSkill | null>(null);
   const [localDocContent, setLocalDocContent] = useState<string | null>(null);
@@ -273,33 +321,53 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     [currentTool, installedTools]
   );
   const currentToolKey = currentTool?.key ?? null;
+  const currentToolSkillsDir = currentTool?.skills_dir ?? null;
+  const currentToolDisplayName = currentTool?.display_name ?? "";
 
   const localSkillsRequestRef = useRef(0);
   const loadLocalSkills = useCallback(async () => {
     const requestId = ++localSkillsRequestRef.current;
-    if (!currentToolKey) {
+    if (!currentToolKey || !currentToolSkillsDir) {
       setLocalSkills([]);
+      setBrokenSymlinks([]);
       return;
     }
     setLocalSkillsLoading(true);
     try {
-      const skills = await api.getGlobalLocalSkills(currentToolKey);
-      if (localSkillsRequestRef.current === requestId) setLocalSkills(skills);
+      const [skills, broken] = await Promise.all([
+        api.getGlobalLocalSkills(currentToolKey),
+        api.detectBrokenSymlinks(currentToolSkillsDir).catch((error: unknown) => {
+          toast.error(getErrorMessage(error, t("common.error")));
+          return [];
+        }),
+      ]);
+      if (localSkillsRequestRef.current === requestId) {
+        const existingPaths = new Set(skills.map((skill) => skill.relative_path));
+        const brokenOnly = broken
+          .filter((name) => !existingPaths.has(name))
+          .map((name) =>
+            buildBrokenSymlinkSkill(name, currentToolSkillsDir, currentToolKey, currentToolDisplayName)
+          );
+        setBrokenSymlinks(broken);
+        setLocalSkills([...skills, ...brokenOnly]);
+      }
     } catch (error: unknown) {
       if (localSkillsRequestRef.current === requestId) {
         toast.error(getErrorMessage(error, t("common.error")));
         setLocalSkills([]);
+        setBrokenSymlinks([]);
       }
     } finally {
       if (localSkillsRequestRef.current === requestId) setLocalSkillsLoading(false);
     }
-  }, [currentToolKey, t]);
+  }, [currentToolDisplayName, currentToolKey, currentToolSkillsDir, t]);
 
   const loadedAgentKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!currentToolKey) {
       loadedAgentKeyRef.current = null;
       setLocalSkills([]);
+      setBrokenSymlinks([]);
       return;
     }
     if (loadedAgentKeyRef.current === currentToolKey) return;
@@ -564,6 +632,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     const uploadKey = `upload:${skill.relative_path}`;
     const pullKey = `pull:${skill.relative_path}`;
     const deleteKey = `delete:${skill.relative_path}`;
+    const isBroken = brokenSymlinks.includes(skill.relative_path);
     const canPull = skill.sync_status === "center_newer" || skill.sync_status === "diverged";
     const isInSync = skill.sync_status === "in_sync";
     const isManaged = !!skill.center_skill_id && managedLocalIds.has(skill.center_skill_id);
@@ -572,6 +641,26 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     const buttonClassName = variant === "grid"
       ? "rounded px-2 py-1 text-[13px] font-medium text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
       : "rounded p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50";
+
+    if (isBroken) {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setDeleteLocalConfirmSkill(skill);
+          }}
+          disabled={localActionKey === deleteKey}
+          title={t("globalWorkspace.localSkills.deleteLocal")}
+          className={cn(buttonClassName, "text-red-500 hover:bg-red-500/10 hover:text-red-500")}
+        >
+          {localActionKey === deleteKey ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+        </button>
+      );
+    }
 
     if (isInSync && !isManaged) return null;
 
@@ -962,6 +1051,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           {visibleLocalSkills.map((skill) => {
             const statusMeta = getLocalStatusMeta(t, skill.sync_status);
             const isManaged = !!skill.center_skill_id && managedLocalIds.has(skill.center_skill_id);
+            const isBroken = brokenSymlinks.includes(skill.relative_path);
 
             return (
               <WorkspaceSkillCard
@@ -973,9 +1063,10 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 status={statusMeta}
                 fileCount={skill.files.length}
                 active={isManaged}
+                isBroken={isBroken}
                 actions={renderLocalSkillActions(skill, viewMode)}
                 actionsHover={viewMode === "list"}
-                onClick={() => void openLocalDetail(skill)}
+                onClick={isBroken ? undefined : () => void openLocalDetail(skill)}
               />
             );
           })}

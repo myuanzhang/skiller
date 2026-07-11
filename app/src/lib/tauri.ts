@@ -358,6 +358,9 @@ export const renameTag = (oldName: string, newName: string) =>
 export const deleteTag = (name: string) =>
   invoke<void>("delete_tag", { name });
 
+export const detectBrokenSymlinks = (agentSkillsDir: string) =>
+  invoke<string[]>("detect_broken_symlinks", { agentSkillsDir });
+
 // ── Sync ──
 
 export const syncSkillToTool = (skillId: string, tool: string) =>
