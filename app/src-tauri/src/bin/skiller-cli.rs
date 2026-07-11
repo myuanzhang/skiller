@@ -800,7 +800,7 @@ fn install_local_action(
     let result = installer::install_from_local(&path, name)?;
     let metadata = cmd::InstallSourceMetadata {
         source_type: "local".to_string(),
-        source_ref: Some(path.to_string_lossy().to_string()),
+        source_ref: None,
         source_ref_resolved: None,
         source_subpath: None,
         source_branch: None,
@@ -1403,7 +1403,7 @@ fn run_adopt(
         } else {
             cmd::InstallSourceMetadata {
                 source_type: "local".to_string(),
-                source_ref: Some(dir.to_string_lossy().to_string()),
+                source_ref: None,
                 source_ref_resolved: None,
                 source_subpath: None,
                 source_branch: None,

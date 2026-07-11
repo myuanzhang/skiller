@@ -276,7 +276,7 @@ fn reconcile_skills_index_unlocked(store: &SkillStore) -> anyhow::Result<()> {
             name,
             description: meta.description,
             source_type: "import".to_string(),
-            source_ref: Some(central_path.clone()),
+            source_ref: None,
             source_ref_resolved: None,
             source_subpath: None,
             source_branch: None,

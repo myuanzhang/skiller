@@ -227,8 +227,8 @@
       "reimported": "Skill reimported",
       "relink": "Relink",
       "relinked": "Source path relinked",
-      "detachSource": "Keep local copy",
-      "detachedSource": "Source tracking removed",
+      "detachSource": "Stop tracking source",
+      "detachedSource": "Stopped tracking the original path; kept the Skills Center copy",
       "alreadyUpToDate": "Skill content unchanged (version synced)"
     },
     "gitConfigEntry": "Sync Config",

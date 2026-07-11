@@ -712,7 +712,7 @@ pub async fn install_local(
             let path = PathBuf::from(&source_path);
             let metadata = InstallSourceMetadata {
                 source_type: "local".to_string(),
-                source_ref: Some(source_path.clone()),
+                source_ref: None,
                 source_ref_resolved: None,
                 source_subpath: None,
                 source_branch: None,
@@ -2262,7 +2262,7 @@ pub async fn batch_import_folder(
                     installer::install_from_local(dir, Some(&name)).map_err(AppError::io)?;
                 let metadata = InstallSourceMetadata {
                     source_type: "local".to_string(),
-                    source_ref: Some(dir.to_string_lossy().to_string()),
+                    source_ref: None,
                     source_ref_resolved: None,
                     source_subpath: None,
                     source_branch: None,

@@ -261,17 +261,6 @@ fn import_agent_local_skill_to_center(
             )
             .map_err(AppError::db)?;
 
-        let already_matched_by_ref = source_ref_matches_skill_path(
-            &skill.path,
-            std::fs::canonicalize(&skill.path).ok().as_ref(),
-            existing,
-        );
-        if existing.source_type == "local" && already_matched_by_ref {
-            store
-                .update_skill_source_ref(&existing.id, &skill.path)
-                .map_err(AppError::db)?;
-        }
-
         // Register this agent as a managed sync target so the adopted skill is
         // recognized as managed (gives it a delete button). Reusing the regular
         // sync path keeps the target consistent with every other managed skill:
@@ -290,7 +279,7 @@ fn import_agent_local_skill_to_center(
         name: result.name.clone(),
         description: result.description.clone(),
         source_type: "local".to_string(),
-        source_ref: Some(skill.path.clone()),
+        source_ref: None,
         source_ref_resolved: None,
         source_subpath: None,
         source_branch: None,

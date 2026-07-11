@@ -196,8 +196,8 @@
       "reimported": "Skill 已重新匯入",
       "relink": "重新關聯",
       "relinked": "已重新關聯原路徑",
-      "detachSource": "轉為本機副本",
-      "detachedSource": "已取消原路徑追蹤",
+      "detachSource": "停止維護原路徑",
+      "detachedSource": "已停止維護原路徑，僅保留技能中心副本",
       "alreadyUpToDate": "Skill 內容未變化（版本已同步）"
     },
     "gitConfigEntry": "同步設定",

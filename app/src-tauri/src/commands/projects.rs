@@ -883,7 +883,7 @@ pub async fn import_project_skill_to_center(
             name: result.name.clone(),
             description: result.description.clone(),
             source_type: "local".to_string(),
-            source_ref: Some(skill.path.clone()),
+            source_ref: None,
             source_ref_resolved: None,
             source_subpath: None,
             source_branch: None,
