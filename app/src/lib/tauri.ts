@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 // ── Types ──
 
-export type ToolCategory = "coding" | "lobster";
+export type ToolCategory = "coding" | "personal";
 
 export interface ToolInfo {
   key: string;
@@ -49,6 +49,13 @@ export interface SkillTarget {
   mode: string;
   status: string;
   synced_at: number | null;
+}
+
+export interface SkillUsageStat {
+  skill_name: string;
+  count: number;
+  last_used_at: number | null;
+  agents: string[];
 }
 
 export interface SkillToolToggle {
@@ -338,6 +345,9 @@ export const relinkLocalSkillSource = (skillId: string, sourcePath: string) =>
 export const detachLocalSkillSource = (skillId: string) =>
   invoke<ManagedSkill>("detach_local_skill_source", { skillId });
 
+export const getSkillUsageStats = () =>
+  invoke<SkillUsageStat[]>("get_skill_usage_stats");
+
 export interface BatchImportResult {
   imported: number;
   skipped: number;
@@ -357,6 +367,12 @@ export const renameTag = (oldName: string, newName: string) =>
 
 export const deleteTag = (name: string) =>
   invoke<void>("delete_tag", { name });
+
+export const openSkillSource = (skillId: string) =>
+  invoke<void>("open_skill_source", { skillId });
+
+export const openSkillLocalCopy = (skillId: string) =>
+  invoke<void>("open_skill_local_copy", { skillId });
 
 export const detectBrokenSymlinks = (agentSkillsDir: string) =>
   invoke<string[]>("detect_broken_symlinks", { agentSkillsDir });

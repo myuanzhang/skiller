@@ -10,8 +10,9 @@ pub enum ToolCategory {
     /// Coding agents (Claude Code, Cursor, Codex, etc.). The default.
     #[default]
     Coding,
-    /// Lobster-class personal AI assistants (OpenClaw ecosystem, Hermes Agent).
-    Lobster,
+    /// Personal AI assistants (OpenClaw, Hermes Agent, WorkBuddy, etc.).
+    #[serde(alias = "lobster")]
+    Personal,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -329,7 +330,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             relative_detect_dir: ".openclaw".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,
-            category: ToolCategory::Lobster,
+            category: ToolCategory::Personal,
             is_custom: false,
             recursive_scan: false,
             project_relative_skills_dir: None,
@@ -725,7 +726,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             relative_detect_dir: ".hermes".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,
-            category: ToolCategory::Lobster,
+            category: ToolCategory::Personal,
             is_custom: false,
             recursive_scan: true,
             project_relative_skills_dir: None,
@@ -737,7 +738,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             relative_detect_dir: ".qclaw".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,
-            category: ToolCategory::Lobster,
+            category: ToolCategory::Personal,
             is_custom: false,
             recursive_scan: false,
             project_relative_skills_dir: None,
@@ -749,7 +750,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             relative_detect_dir: ".easyclaw".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,
-            category: ToolCategory::Lobster,
+            category: ToolCategory::Personal,
             is_custom: false,
             recursive_scan: false,
             project_relative_skills_dir: None,
@@ -761,7 +762,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             relative_detect_dir: ".openclaw-autoclaw".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,
-            category: ToolCategory::Lobster,
+            category: ToolCategory::Personal,
             is_custom: false,
             recursive_scan: false,
             project_relative_skills_dir: None,
@@ -773,7 +774,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             relative_detect_dir: ".workbuddy".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,
-            category: ToolCategory::Lobster,
+            category: ToolCategory::Personal,
             is_custom: false,
             recursive_scan: false,
             project_relative_skills_dir: None,
@@ -972,14 +973,14 @@ mod tests {
                 display_name: "Legacy Custom OMP".to_string(),
                 skills_dir: tmp.path().join("legacy-skills").to_string_lossy().into_owned(),
                 project_relative_skills_dir: Some(".legacy/skills".to_string()),
-                category: ToolCategory::Lobster,
+                category: ToolCategory::Personal,
             },
             CustomToolDef {
                 key: "custom_agent".to_string(),
                 display_name: "Custom Agent".to_string(),
                 skills_dir: custom_skills.to_string_lossy().into_owned(),
                 project_relative_skills_dir: Some(custom_project_path.to_string()),
-                category: ToolCategory::Lobster,
+                category: ToolCategory::Personal,
             },
         ];
         store
@@ -1007,7 +1008,7 @@ mod tests {
             .unwrap();
         assert_eq!(custom_adapter.display_name, "Custom Agent");
         assert!(custom_adapter.is_custom);
-        assert_eq!(custom_adapter.category, ToolCategory::Lobster);
+        assert_eq!(custom_adapter.category, ToolCategory::Personal);
         assert_eq!(custom_adapter.skills_dir(), custom_skills);
         assert_eq!(custom_adapter.project_relative_skills_dir(), custom_project_path);
 

@@ -62,7 +62,7 @@ export function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { presets, viewedPreset, setViewedPresetId, refreshPresets, refreshManagedSkills, projects, refreshProjects, tools, managedSkills, closeSkillDetail, requestWorkspaceClose } = useApp();
+  const { presets, viewedPreset, setViewedPresetId, refreshPresets, refreshManagedSkills, projects, refreshProjects, tools, closeSkillDetail, requestWorkspaceClose } = useApp();
   const [showCreate, setShowCreate] = useState(false);
   const [showAddProject, setShowAddProject] = useState(false);
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string; icon?: string | null } | null>(null);
@@ -73,30 +73,48 @@ export function Sidebar() {
     () => installedTools.filter((t) => t.category === "coding"),
     [installedTools]
   );
-  const installedLobsterTools = useMemo(
-    () => installedTools.filter((t) => t.category === "lobster"),
+  const installedPersonalTools = useMemo(
+    () => installedTools.filter((t) => t.category === "personal"),
     [installedTools]
   );
   const [orderedPresets, setOrderedPresets] = useState(presets);
   const [orderedProjects, setOrderedProjects] = useState(projects);
   const [orderedCodingTools, setOrderedCodingTools] = useState(installedCodingTools);
-  const [orderedLobsterTools, setOrderedLobsterTools] = useState(installedLobsterTools);
+  const [orderedPersonalTools, setOrderedPersonalTools] = useState(installedPersonalTools);
   const presetReorderQueueRef = useRef<Promise<void>>(Promise.resolve());
   const projectReorderQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [presetsOpen, setPresetsOpen] = useState(true);
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [globalWorkspaceOpen, setGlobalWorkspaceOpen] = useState(true);
-  const [lobsterWorkspaceOpen, setLobsterWorkspaceOpen] = useState(true);
+  const [personalWorkspaceOpen, setPersonalWorkspaceOpen] = useState(true);
 
-  const globalSkillsByAgent = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const tool of installedTools) {
-      map[tool.key] = managedSkills.filter((skill) =>
-        skill.targets.some((target) => target.tool === tool.key)
-      ).length;
-    }
-    return map;
-  }, [installedTools, managedSkills]);
+  const [localSkillCountByAgent, setLocalSkillCountByAgent] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCounts = async () => {
+      const entries = await Promise.all(
+        installedTools.map(async (tool) => {
+          try {
+            const [skills, broken] = await Promise.all([
+              api.getGlobalLocalSkills(tool.key),
+              api.detectBrokenSymlinks(tool.skills_dir).catch(() => []),
+            ]);
+            const existing = new Set(skills.map((skill) => skill.relative_path));
+            const brokenOnly = broken.filter((name) => !existing.has(name));
+            return [tool.key, skills.length + brokenOnly.length] as const;
+          } catch {
+            return [tool.key, 0] as const;
+          }
+        })
+      );
+      if (!cancelled) setLocalSkillCountByAgent(Object.fromEntries(entries));
+    };
+    void loadCounts();
+    return () => {
+      cancelled = true;
+    };
+  }, [installedTools]);
 
   useEffect(() => { setOrderedPresets(presets); }, [presets]);
   useEffect(() => { setOrderedProjects(projects); }, [projects]);
@@ -113,17 +131,24 @@ export function Sidebar() {
     setOrderedCodingTools(sorted);
   }, [installedCodingTools]);
   useEffect(() => {
-    const stored = localStorage.getItem("skiller:lobster-tool-order");
+    // One-time migration from old localStorage key
+    const legacy = localStorage.getItem("skiller:lobster-tool-order");
+    if (legacy && !localStorage.getItem("skiller:personal-tool-order")) {
+      localStorage.setItem("skiller:personal-tool-order", legacy);
+    }
+    localStorage.removeItem("skiller:lobster-tool-order");
+
+    const stored = localStorage.getItem("skiller:personal-tool-order");
     const storedOrder: string[] = stored ? JSON.parse(stored) : [];
     const sorted = [
       ...storedOrder.flatMap((key) => {
-        const t = installedLobsterTools.find((t) => t.key === key);
+        const t = installedPersonalTools.find((t) => t.key === key);
         return t ? [t] : [];
       }),
-      ...installedLobsterTools.filter((t) => !storedOrder.includes(t.key)),
+      ...installedPersonalTools.filter((t) => !storedOrder.includes(t.key)),
     ];
-    setOrderedLobsterTools(sorted);
-  }, [installedLobsterTools]);
+    setOrderedPersonalTools(sorted);
+  }, [installedPersonalTools]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -175,14 +200,14 @@ export function Sidebar() {
   const handleToolDragEnd = (category: ToolCategory) => (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const current = category === "lobster" ? orderedLobsterTools : orderedCodingTools;
+    const current = category === "personal" ? orderedPersonalTools : orderedCodingTools;
     const oldIndex = current.findIndex((tool) => tool.key === active.id);
     const newIndex = current.findIndex((tool) => tool.key === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
     const reordered = arrayMove(current, oldIndex, newIndex);
-    if (category === "lobster") {
-      setOrderedLobsterTools(reordered);
-      localStorage.setItem("skiller:lobster-tool-order", JSON.stringify(reordered.map((t) => t.key)));
+    if (category === "personal") {
+      setOrderedPersonalTools(reordered);
+      localStorage.setItem("skiller:personal-tool-order", JSON.stringify(reordered.map((t) => t.key)));
     } else {
       setOrderedCodingTools(reordered);
       localStorage.setItem("skiller:tool-order", JSON.stringify(reordered.map((t) => t.key)));
@@ -261,7 +286,7 @@ export function Sidebar() {
   };
 
   // Renders one workspace category section (Global Workspace for coding agents,
-  // Lobster Agents for lobster agents). Both sections share identical UX —
+  // Personal Agents for personal assistants). Both sections share identical UX —
   // collapsible heading, "All Agents" overview entry, and a drag-orderable list.
   const renderToolGroup = (group: {
     category: ToolCategory;
@@ -325,7 +350,7 @@ export function Sidebar() {
                 <SortableContext items={group.tools.map((tool) => tool.key)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-0.5">
                     {group.tools.map((tool) => {
-                      const skillCount = globalSkillsByAgent[tool.key] ?? 0;
+                      const skillCount = localSkillCountByAgent[tool.key] ?? 0;
                       const isActive = location.pathname === `${group.basePath}/${tool.key}`;
                       return (
                         <SortableItem key={tool.key} id={tool.key}>
@@ -565,21 +590,21 @@ export function Sidebar() {
             hideWhenEmpty: false,
           })}
 
-          {installedLobsterTools.length > 0 && (
+          {installedPersonalTools.length > 0 && (
             <>
               {/* Divider */}
               <div className="mx-0.5 mt-3.5 mb-2.5 border-t border-border-subtle" />
 
               {renderToolGroup({
-                category: "lobster",
-                headingLabel: t("sidebar.lobsterAgents"),
-                allAgentsLabel: t("lobsterWorkspace.allAgents"),
-                emptyLabel: t("lobsterWorkspace.noAgents"),
-                basePath: "/lobster-workspace",
-                droppableId: "lobster-workspace-tools",
-                tools: orderedLobsterTools,
-                isOpen: lobsterWorkspaceOpen,
-                onToggle: () => setLobsterWorkspaceOpen((v) => !v),
+                category: "personal",
+                headingLabel: t("sidebar.personalAgents"),
+                allAgentsLabel: t("personalWorkspace.allAgents"),
+                emptyLabel: t("personalWorkspace.noAgents"),
+                basePath: "/personal-workspace",
+                droppableId: "personal-workspace-tools",
+                tools: orderedPersonalTools,
+                isOpen: personalWorkspaceOpen,
+                onToggle: () => setPersonalWorkspaceOpen((v) => !v),
                 hideWhenEmpty: true,
               })}
             </>

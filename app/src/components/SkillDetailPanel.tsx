@@ -6,6 +6,9 @@ import {
   Github,
   HardDrive,
   Globe,
+  CheckCircle2,
+  Loader2,
+  Plus,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
@@ -18,38 +21,37 @@ import {
   type SkillDocument,
   type SourceSkillDocument,
   type SkillSourceDiff,
-  type SkillToolToggle,
   type ToolInfo,
 } from "../lib/tauri";
 import { SkillSourceDiffViewer } from "./SkillSourceDiffViewer";
 import { DetailSheet } from "./DetailSheet";
 import { SkillMarkdown } from "./SkillMarkdown";
-import { AgentToggleSection, type AgentToggleItem } from "./AgentToggleSection";
 import { SkillProjectsSection } from "./SkillProjectsSection";
-import { SyncDots } from "./SyncDots";
 import { EmptyState } from "./ui/EmptyState";
 import { DocumentSkeleton } from "./ui/Skeleton";
+import { AgentIcon } from "./AgentIcon";
+import { getTagColor } from "../lib/skillTags";
 
 interface Props {
   skill: ManagedSkill | null;
   onClose: () => void;
   tools?: ToolInfo[];
-  toolToggles?: SkillToolToggle[] | null;
-  togglingTool?: string | null;
-  onToggleTool?: (tool: string, enabled: boolean) => void;
+  pendingToolKey?: string | null;
+  onToggleTarget?: (toolKey: string, enabled: boolean) => void;
   projects?: Project[];
   onProjectsChanged?: () => void;
+  allTags?: string[];
 }
 
 export function SkillDetailPanel({
   skill,
   onClose,
   tools,
-  toolToggles,
-  togglingTool,
-  onToggleTool,
+  pendingToolKey,
+  onToggleTarget,
   projects,
   onProjectsChanged,
+  allTags = [],
 }: Props) {
   if (!skill) return null;
 
@@ -68,11 +70,11 @@ export function SkillDetailPanel({
       skill={skill}
       onClose={onClose}
       tools={tools}
-      toolToggles={toolToggles}
-      togglingTool={togglingTool}
-      onToggleTool={onToggleTool}
+      pendingToolKey={pendingToolKey}
+      onToggleTarget={onToggleTarget}
       projects={projects}
       onProjectsChanged={onProjectsChanged}
+      allTags={allTags}
     />
   );
 }
@@ -81,20 +83,20 @@ function SkillDetailPanelContent({
   skill,
   onClose,
   tools,
-  toolToggles,
-  togglingTool,
-  onToggleTool,
+  pendingToolKey,
+  onToggleTarget,
   projects,
   onProjectsChanged,
+  allTags = [],
 }: {
   skill: ManagedSkill;
   onClose: () => void;
   tools?: ToolInfo[];
-  toolToggles?: SkillToolToggle[] | null;
-  togglingTool?: string | null;
-  onToggleTool?: (tool: string, enabled: boolean) => void;
+  pendingToolKey?: string | null;
+  onToggleTarget?: (toolKey: string, enabled: boolean) => void;
   projects?: Project[];
   onProjectsChanged?: () => void;
+  allTags?: string[];
 }) {
   const { t } = useTranslation();
   const [doc, setDoc] = useState<SkillDocument | null>(null);
@@ -103,6 +105,7 @@ function SkillDetailPanelContent({
   const [sourceDiffFailed, setSourceDiffFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isMetadataExpanded, setIsMetadataExpanded] = useState(false);
+  const [showUnavailableAgents, setShowUnavailableAgents] = useState(false);
   const [contentTab, setContentTab] = useState<"local" | "diff" | "source">("local");
   const localRequestIdRef = useRef(0);
   const sourceRequestIdRef = useRef(0);
@@ -111,7 +114,7 @@ function SkillDetailPanelContent({
   const supportsSourceDiff =
     skill.source_type === "git"
     || skill.source_type === "skillssh"
-    || ((skill.source_type === "local" || skill.source_type === "import") && !!skill.source_ref);
+    || (skill.source_type === "local" && !!skill.source_ref);
   const [sourceLoading, setSourceLoading] = useState(supportsSourceDiff);
   const localDocVersion = `${skill.id}:${skill.updated_at}`;
   const sourceDocVersion = [
@@ -171,9 +174,6 @@ function SkillDetailPanelContent({
       });
   }, [skillId, supportsSourceDiff, sourceDocVersion]);
 
-  // Lazily load the whole-directory diff only when the user opens the Diff
-  // tab. For git/skills.sh skills this clones the repo, so we avoid paying
-  // that cost (and a second clone alongside the source doc) up front.
   useEffect(() => {
     if (contentTab !== "diff" || !supportsSourceDiff) return;
     if (diffRequestedRef.current) return;
@@ -190,14 +190,14 @@ function SkillDetailPanelContent({
       case "skillssh":
         return <Github className="h-3.5 w-3.5" />;
       case "local":
-      case "import":
         return <HardDrive className="h-3.5 w-3.5" />;
       default:
         return <Globe className="h-3.5 w-3.5" />;
     }
   };
 
-  const sourceTypeLabel = (type: string) => (type === "skillssh" ? "skills.sh" : type);
+  const sourceTypeLabel = (type: string) =>
+    t(`mySkills.sourceFilter.${type}`, { defaultValue: type });
 
   const metadataItems = [
     { label: t("mySkills.sourceType"), value: sourceTypeLabel(skill.source_type) },
@@ -213,38 +213,33 @@ function SkillDetailPanelContent({
   const activeSourceDiff = sourceDiff?.skill_id === skill.id ? sourceDiff : null;
   const sourceDiffLoading =
     contentTab === "diff" && supportsSourceDiff && !activeSourceDiff && !sourceDiffFailed;
-  const toggleItems: AgentToggleItem[] = (toolToggles ?? []).map((toggle) => ({
-    key: toggle.tool,
-    displayName: toggle.display_name,
-    enabled: toggle.enabled,
-    isAvailable: toggle.installed && toggle.globally_enabled,
-    disabled: !toggle.installed || !toggle.globally_enabled,
-    badgeLabel: !toggle.installed
-      ? t("mySkills.agentToggleNotInstalled")
-      : !toggle.globally_enabled
-        ? t("mySkills.agentToggleDisabledGlobally")
-        : null,
-  }));
+
+  const syncedKeys = new Set(skill.targets.map((t) => t.tool));
+  const allTools = tools ?? [];
+  const availableTools = allTools.filter((t) => t.installed && t.enabled);
+  const unavailableTools = allTools.filter((t) => !t.installed || !t.enabled);
+  const syncedCount = availableTools.filter((t) => syncedKeys.has(t.key)).length;
+
+  const orphanTargets = skill.targets.filter((t) => !availableTools.some((at) => at.key === t.tool));
 
   const meta = (
     <>
-      <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
-        {tools && <SyncDots skill={skill} tools={tools} size="sm" includeOrphan />}
-        {skill.tags.length > 0 && (
-          <>
-            {tools && <span className="mx-0.5 h-3 w-px bg-border-subtle" />}
-            {skill.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center rounded-full bg-surface-hover px-2 py-0.5 text-[11px] font-medium text-secondary"
-              >
-                {tag}
-              </span>
-            ))}
-          </>
-        )}
-      </div>
-      <div className="mt-3 flex min-w-0 items-center gap-2 text-[13px] text-muted">
+      {skill.tags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1">
+          {skill.tags.map((tag) => (
+            <span
+              key={tag}
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+                getTagColor(tag, allTags)
+              )}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className={cn("flex min-w-0 items-center gap-2 text-[13px] text-muted", skill.tags.length > 0 && "mt-3")}>
         <Folder className="h-3.5 w-3.5 shrink-0" />
         <span className="font-mono truncate" title={skill.central_path}>
           {skill.central_path}
@@ -315,13 +310,119 @@ function SkillDetailPanelContent({
       onBack={onClose}
       backLabel={t("common.back")}
     >
-      {toolToggles && onToggleTool && (
-        <AgentToggleSection
-          items={toggleItems}
-          togglingKey={togglingTool}
-          onToggle={onToggleTool}
-          className="mb-4"
-        />
+      {tools && onToggleTarget && availableTools.length > 0 && (
+        <div className="mb-4 rounded-xl border border-border-subtle">
+          <div className="border-b border-border-subtle px-5 py-3">
+            <div className="flex items-center justify-between gap-2 text-[13px]">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="font-medium text-secondary">{t("mySkills.agentTogglesTitle")}</span>
+                <span className="rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-[12px] text-muted">
+                  {t("mySkills.syncSummary", {
+                    synced: syncedCount,
+                    total: availableTools.length,
+                  })}
+                </span>
+              </div>
+              {(unavailableTools.length > 0 || orphanTargets.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => setShowUnavailableAgents((prev) => !prev)}
+                  className="inline-flex items-center gap-1 text-[12px] text-muted transition-colors hover:text-secondary"
+                >
+                  {showUnavailableAgents ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  <span>{t("mySkills.agentUnavailableCount", { count: unavailableTools.length + orphanTargets.length })}</span>
+                </button>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {availableTools.map((tool) => {
+                const isSynced = syncedKeys.has(tool.key);
+                const isPending = pendingToolKey === tool.key;
+                const title = `${tool.display_name} · ${isSynced
+                  ? t("mySkills.targetClickUninstall")
+                  : t("mySkills.targetClickInstall")}`;
+                return (
+                  <button
+                    key={tool.key}
+                    type="button"
+                    title={title}
+                    disabled={isPending}
+                    onClick={() => onToggleTarget(tool.key, !isSynced)}
+                    className={cn(
+                      "group inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium transition-all",
+                      isSynced
+                        ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400"
+                        : "border border-border-subtle bg-bg-secondary text-accent-light hover:bg-surface-hover",
+                      isPending && "opacity-70",
+                    )}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted" />
+                    ) : (
+                      <>
+                        <AgentIcon
+                          agentKey={tool.key}
+                          displayName={tool.display_name}
+                          className="h-4 w-4 rounded-control"
+                        />
+                        <span>{tool.display_name}</span>
+                        {isSynced && (
+                          <CheckCircle2 className="h-3 w-3" />
+                        )}
+                        {!isSynced && (
+                          <Plus className="h-3 w-3" />
+                        )}
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {showUnavailableAgents && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {unavailableTools.map((tool) => {
+                  const reason = !tool.installed
+                    ? t("mySkills.agentToggleNotInstalled")
+                    : t("mySkills.agentToggleDisabledGlobally");
+                  return (
+                    <div
+                      key={tool.key}
+                      title={`${tool.display_name} · ${reason}`}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border-subtle bg-bg-secondary px-2 text-[12px] text-muted opacity-50"
+                    >
+                      <AgentIcon
+                        agentKey={tool.key}
+                        displayName={tool.display_name}
+                        className="h-4 w-4 rounded-control grayscale"
+                      />
+                      <span>{tool.display_name}</span>
+                    </div>
+                  );
+                })}
+                {orphanTargets.map((target) => {
+                  const tool = allTools.find((t) => t.key === target.tool);
+                  const displayName = tool?.display_name ?? target.tool;
+                  return (
+                    <button
+                      key={target.tool}
+                      type="button"
+                      title={`${displayName} · ${t("mySkills.targetOrphan")} · ${t("mySkills.targetClickUninstall")}`}
+                      onClick={() => onToggleTarget?.(target.tool, false)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 text-[12px] text-amber-600 transition-all hover:bg-amber-500/15 dark:text-amber-400"
+                    >
+                      <AgentIcon
+                        agentKey={target.tool}
+                        displayName={displayName}
+                        className="h-4 w-4 rounded-control opacity-70"
+                      />
+                      <span>{displayName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {projects && projects.length > 0 && (

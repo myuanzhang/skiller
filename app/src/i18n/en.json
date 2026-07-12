@@ -6,7 +6,7 @@
     "dashboard": "Dashboard",
     "mySkills": "Library",
     "globalWorkspace": "Global Workspace",
-    "lobsterAgents": "Lobster Agents",
+    "personalAgents": "Personal Assistants",
     "installSkills": "Install Skills",
     "presets": "Presets",
     "newPreset": "New Preset",
@@ -174,6 +174,13 @@
     "sourceBranch": "Branch",
     "sourceSubpath": "Subpath",
     "sourceRevision": "Revision",
+    "sourceOpenDir": "Click to open the Skills Center copy",
+    "sourceOpenUrl": "Click to open source",
+    "sourceOpenFailed": "Failed to open source: {{message}}",
+    "detectBrokenSymlinks": "Detect Broken Links",
+    "brokenSymlinksDetected": "Detected {{count}} broken symlink skills: {{names}}",
+    "noBrokenSymlinks": "No broken symlinks found",
+    "detectBrokenFailed": "Failed to detect broken symlinks: {{message}}",
     "docTabs": {
       "local": "Local",
       "diff": "Diff",
@@ -206,6 +213,11 @@
     "agentToggleNotInstalled": "Not installed",
     "agentToggleDisabledGlobally": "Disabled in Settings",
     "agentUnavailableCount": "{{count}} unavailable",
+    "usage": {
+      "short": "{{count}} uses",
+      "count": "{{count}} uses",
+      "lastUsed": "Last used {{time}}"
+    },
     "updateStatus": {
       "unknown": "Unknown",
       "checking": "Checking",
@@ -239,10 +251,9 @@
     },
     "sourceFilter": {
       "all": "All Sources",
-      "local": "Local",
-      "import": "Imported",
-      "git": "Git",
-      "skillssh": "skills.sh"
+      "local": "Local copy",
+      "git": "Git source",
+      "skillssh": "skills.sh source"
     },
     "tags": {
       "filter": "Tags",
@@ -850,11 +861,11 @@
     "skillCount": "{{count}} skills",
     "deactivateConfirm": "Remove all {{count}} installed skills from \"{{name}}\"?"
   },
-  "lobsterWorkspace": {
-    "title": "Lobster Agents",
-    "allAgents": "All Lobster Agents",
-    "noAgents": "No Lobster agents installed",
-    "noAgentsHint": "Install OpenClaw, Hermes Agent, or another lobster-class personal assistant to see it here."
+  "personalWorkspace": {
+    "title": "Personal Assistants",
+    "allAgents": "All Personal Assistants",
+    "noAgents": "No personal assistants installed",
+    "noAgentsHint": "Install OpenClaw, Hermes Agent, WorkBuddy, or another personal assistant agent to see it here."
   },
   "globalWorkspace": {
     "title": "Global Workspace",
@@ -886,18 +897,18 @@
     "localSkills": {
       "searchPlaceholder": "Search agent skills...",
       "empty": "No local skills found",
-      "summary": "{{total}} / {{managed}} managed / {{synced}} in sync",
-      "upload": "Upload",
+      "summary": "{{total}} skills / {{managed}} managed / {{localOnly}} local only",
+      "upload": "Adopt",
       "pull": "Pull",
       "removeManaged": "Remove from agent",
       "deleteLocal": "Delete local skill",
       "deleteLocalConfirmTitle": "Delete local skill?",
       "deleteLocalConfirmMessage": "Delete \"{{name}}\" from {{agent}}? This removes the local files and cannot be undone.",
       "deletedLocalToast": "Deleted \"{{name}}\" from {{agent}}.",
-      "uploadedToast": "Uploaded \"{{name}}\" to Skills Center. It was not synced back to {{agent}}.",
+      "uploadedToast": "Uploaded \"{{name}}\" to Skills Center and adopted the copy in {{agent}}.",
       "pulledToast": "Updated \"{{name}}\" from Skills Center in {{agent}}.",
-      "uploadConfirmTitle": "Update center skill?",
-      "uploadConfirmMessage": "Upload \"{{name}}\" to the matching Skills Center entry? This replaces the center copy.",
+      "uploadConfirmTitle": "Adopt and update center skill?",
+      "uploadConfirmMessage": "Adopt \"{{name}}\" into the matching Skills Center entry? This replaces the center copy and changes this agent's copy to point at the center copy.",
       "pullConfirmTitle": "Overwrite local skill?",
       "pullConfirmMessage": "Pull the Skills Center version of \"{{name}}\" into {{agent}}? This overwrites the local agent copy.",
       "status": {
@@ -908,7 +919,17 @@
         "diverged": "Conflict"
       },
       "statusFilter": "Status",
-      "allStatus": "All statuses"
+      "allStatus": "All statuses",
+      "detectBrokenSymlinks": "Detect Broken Links",
+      "brokenSymlinksDetected": "Found {{count}} broken symlinks in {{agent}}: {{names}}",
+      "noBrokenSymlinks": "No broken symlinks found in {{agent}}",
+      "detectBrokenFailed": "Failed to detect broken symlinks"
     }
+  },
+  "workspace": {
+    "detectBrokenSymlinks": "Detect Broken Links",
+    "brokenSymlinksDetected": "Found {{count}} broken symlinks in {{agent}}: {{names}}",
+    "noBrokenSymlinks": "No broken symlinks found in {{agent}}",
+    "detectBrokenFailed": "Failed to detect broken symlinks"
   }
 }

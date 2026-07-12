@@ -198,7 +198,7 @@ export function SkillProjectsSection({ skill, projects, onChanged }: Props) {
 
   return (
     <div className="mb-4 rounded-xl border border-border-subtle">
-      <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-6 py-2.5 text-[13px]">
+      <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-5 py-3 text-[13px]">
         <div className="flex min-w-0 items-center gap-2">
           <span className="font-medium text-secondary">
             {t("addFromLibrary.projectsTitle")}
@@ -220,7 +220,7 @@ export function SkillProjectsSection({ skill, projects, onChanged }: Props) {
           </button>
         )}
       </div>
-      <div className="grid grid-cols-1 gap-1.5 px-3 py-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 px-5 py-3 md:grid-cols-2">
         {visibleProjects.map((project) => {
           const row = rows[project.id];
           const activeTargets = row?.targets.filter((target) => target.installed && target.enabled) ?? [];
@@ -228,11 +228,11 @@ export function SkillProjectsSection({ skill, projects, onChanged }: Props) {
             <div
               key={project.id}
               className={cn(
-                "rounded-md border border-border-subtle bg-background px-3 py-2 text-[12.5px]",
+                "rounded-lg border border-border-subtle bg-background px-3 py-3 text-[12.5px]",
                 row?.state === "installed" && "border-emerald-500/30 bg-emerald-500/5",
               )}
             >
-              <div className="flex min-w-0 flex-col gap-1.5">
+              <div className="flex min-w-0 flex-col gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <FolderOpen className="h-3.5 w-3.5 shrink-0 text-muted" />
                   <span className="min-w-0 flex-1 truncate font-medium text-secondary" title={project.name}>
@@ -250,18 +250,12 @@ export function SkillProjectsSection({ skill, projects, onChanged }: Props) {
                   ) : null}
                 </div>
                 {row && row.state !== "loading" && row.state !== "error" && (
-                  <div className="flex min-w-0 flex-wrap gap-1.5">
+                  <div className="flex min-w-0 flex-wrap gap-2">
                     {activeTargets.length === 0 ? (
                       <span className="text-[12px] text-muted">{t("addFromLibrary.status.unavailable")}</span>
                     ) : activeTargets.map((target) => {
                       const agentState = getAgentState(row, target);
                       const agentPending = pendingKey === `${project.id}:${target.key}`;
-                      const label =
-                        agentState === "installed"
-                          ? t("addFromLibrary.installedShort")
-                          : agentState === "conflict"
-                            ? t("addFromLibrary.status.conflict")
-                            : t("addFromLibrary.add");
                       const title =
                         agentState === "conflict"
                           ? t("addFromLibrary.tooltip.conflict")
@@ -282,27 +276,28 @@ export function SkillProjectsSection({ skill, projects, onChanged }: Props) {
                           }}
                           disabled={(agentState !== "available" && agentState !== "installed") || agentPending}
                           className={cn(
-                            "inline-flex h-7 items-center gap-1 rounded-md px-1.5 text-[12px] font-semibold transition-colors disabled:cursor-default",
-                            agentState === "available" && "text-accent-light hover:bg-accent-bg",
-                            agentState === "installed" && "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400",
-                            agentState === "conflict" && "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                            "inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium transition-all",
+                            agentState === "available" && "border border-border-subtle bg-bg-secondary text-accent-light hover:bg-surface-hover",
+                            agentState === "installed" && "border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400",
+                            agentState === "conflict" && "border border-rose-500/30 bg-rose-500/10 text-rose-600 hover:bg-rose-500/15 dark:text-rose-400",
+                            agentPending && "opacity-70",
                           )}
                         >
                           <AgentIcon
                             agentKey={target.key}
                             displayName={target.display_name}
-                            className="h-3.5 w-3.5 rounded-control"
+                            className="h-4 w-4 rounded-control"
                           />
                           {agentPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : agentState === "installed" ? (
-                            <CheckCircle2 className="h-3 w-3" />
+                            <CheckCircle2 className="h-3.5 w-3.5" />
                           ) : agentState === "conflict" ? (
-                            <AlertTriangle className="h-3 w-3" />
+                            <AlertTriangle className="h-3.5 w-3.5" />
                           ) : (
-                            <Plus className="h-3 w-3" />
+                            <Plus className="h-3.5 w-3.5" />
                           )}
-                          <span>{label}</span>
+                          <span>{target.display_name}</span>
                         </button>
                       );
                     })}

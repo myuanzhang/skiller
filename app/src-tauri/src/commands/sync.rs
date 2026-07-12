@@ -305,7 +305,7 @@ mod tests {
             id: id.to_string(),
             name: name.to_string(),
             description: None,
-            source_type: "import".to_string(),
+            source_type: "local".to_string(),
             source_ref: Some(central_path.to_string_lossy().to_string()),
             source_ref_resolved: None,
             source_subpath: None,

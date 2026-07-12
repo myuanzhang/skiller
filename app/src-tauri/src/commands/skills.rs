@@ -1,4 +1,6 @@
 use serde::Serialize;
+use serde_json::Value;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -65,6 +67,14 @@ pub struct ManagedSkillDto {
     pub targets: Vec<TargetDto>,
     pub preset_ids: Vec<String>,
     pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct SkillUsageStatDto {
+    pub skill_name: String,
+    pub count: u64,
+    pub last_used_at: Option<i64>,
+    pub agents: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -261,7 +271,7 @@ pub async fn get_source_skill_document(
             .map_err(AppError::db)?
             .ok_or_else(|| AppError::not_found("Skill not found"))?;
 
-        if matches!(skill.source_type.as_str(), "local" | "import") {
+        if matches!(skill.source_type.as_str(), "local") {
             let source_path = skill.source_ref.as_ref().ok_or_else(|| {
                 AppError::not_found("Local skill is missing its original source path")
             })?;
@@ -456,7 +466,7 @@ pub async fn get_skill_source_diff(
         let central_dir = PathBuf::from(&skill.central_path);
         let source_label = source_label_for_skill(&skill);
 
-        if matches!(skill.source_type.as_str(), "local" | "import") {
+        if matches!(skill.source_type.as_str(), "local") {
             let source_path = skill.source_ref.as_ref().ok_or_else(|| {
                 AppError::not_found("Local skill is missing its original source path")
             })?;
@@ -552,7 +562,6 @@ fn source_label_for_skill(skill: &SkillRecord) -> String {
         "skillssh" => "skills.sh".to_string(),
         "git" => "Git".to_string(),
         "local" => "Local".to_string(),
-        "import" => "Imported".to_string(),
         other => other.to_string(),
     }
 }
@@ -1241,7 +1250,7 @@ pub async fn batch_update_skills(
                         Err(err) => failed.push(format!("{}: {}", skill.name, err.message)),
                     }
                 }
-                "local" | "import" => {
+                "local" => {
                     let outcome = reimport_local_skill_internal(&store, &skill_id);
                     log_reimport_outcome(&store, &skill_id, outcome.as_ref());
                     match outcome {
@@ -1275,7 +1284,7 @@ pub async fn relink_local_skill_source(
             .map_err(AppError::db)?
             .ok_or_else(|| AppError::not_found("Skill not found"))?;
 
-        if !matches!(skill.source_type.as_str(), "local" | "import") {
+        if !matches!(skill.source_type.as_str(), "local") {
             return Err(AppError::invalid_input(
                 "Only local skills can relink source paths",
             ));
@@ -1350,7 +1359,7 @@ pub async fn detach_local_skill_source(
             .map_err(AppError::db)?
             .ok_or_else(|| AppError::not_found("Skill not found"))?;
 
-        if !matches!(skill.source_type.as_str(), "local" | "import") {
+        if !matches!(skill.source_type.as_str(), "local") {
             return Err(AppError::invalid_input(
                 "Only local skills can detach source paths",
             ));
@@ -1448,6 +1457,159 @@ pub fn managed_skill_by_id(store: &SkillStore, skill_id: &str) -> Result<Managed
     let all_targets = store.get_all_targets().map_err(AppError::db)?;
     let tags_map = store.get_tags_map().map_err(AppError::db)?;
     Ok(managed_skill_to_dto(store, skill, &all_targets, &tags_map))
+}
+
+fn value_as_i64(value: &Value) -> Option<i64> {
+    if let Some(n) = value.as_i64() {
+        return Some(if n < 10_000_000_000 { n * 1000 } else { n });
+    }
+    let raw = value.as_str()?;
+    if let Ok(n) = raw.parse::<i64>() {
+        return Some(if n < 10_000_000_000 { n * 1000 } else { n });
+    }
+    chrono::DateTime::parse_from_rfc3339(raw)
+        .ok()
+        .map(|dt| dt.timestamp_millis())
+}
+
+fn value_as_u64(value: Option<&Value>) -> u64 {
+    value
+        .and_then(|v| v.as_u64().or_else(|| v.as_i64().and_then(|n| u64::try_from(n).ok())))
+        .unwrap_or(1)
+}
+
+fn usage_skill_name(value: &Value) -> Option<String> {
+    ["skill", "skill_name", "skillName", "name"]
+        .iter()
+        .find_map(|key| value.get(*key).and_then(Value::as_str))
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(ToString::to_string)
+}
+
+fn usage_timestamp(value: &Value) -> Option<i64> {
+    ["timestamp", "time", "used_at", "usedAt", "last_used_at", "lastUsedAt", "created_at"]
+        .iter()
+        .find_map(|key| value.get(*key).and_then(value_as_i64))
+}
+
+fn add_usage_event(
+    usage: &mut HashMap<String, SkillUsageStatDto>,
+    skill_name: String,
+    count: u64,
+    last_used_at: Option<i64>,
+    agent: Option<String>,
+) {
+    let stat = usage.entry(skill_name.clone()).or_insert_with(|| SkillUsageStatDto {
+        skill_name,
+        count: 0,
+        last_used_at: None,
+        agents: Vec::new(),
+    });
+    stat.count = stat.count.saturating_add(count);
+    if let Some(ts) = last_used_at {
+        if stat.last_used_at.map(|current| ts > current).unwrap_or(true) {
+            stat.last_used_at = Some(ts);
+        }
+    }
+    if let Some(agent) = agent.filter(|s| !s.trim().is_empty()) {
+        if !stat.agents.iter().any(|existing| existing == &agent) {
+            stat.agents.push(agent);
+        }
+    }
+}
+
+fn collect_usage_jsonl(path: &Path, usage: &mut HashMap<String, SkillUsageStatDto>) {
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return;
+    };
+    for line in content.lines().map(str::trim).filter(|line| !line.is_empty()) {
+        let Ok(value) = serde_json::from_str::<Value>(line) else {
+            continue;
+        };
+        let Some(skill_name) = usage_skill_name(&value) else {
+            continue;
+        };
+        let agent = value
+            .get("agent")
+            .or_else(|| value.get("tool"))
+            .and_then(Value::as_str)
+            .map(ToString::to_string);
+        let count = value_as_u64(value.get("count"));
+        add_usage_event(usage, skill_name, count, usage_timestamp(&value), agent);
+    }
+}
+
+fn collect_usage_json(path: &Path, usage: &mut HashMap<String, SkillUsageStatDto>) {
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return;
+    };
+    let Ok(value) = serde_json::from_str::<Value>(&content) else {
+        return;
+    };
+    let Some(map) = value.as_object() else {
+        return;
+    };
+    for (skill_name, stat) in map {
+        if skill_name.trim().is_empty() {
+            continue;
+        }
+        let count = if stat.is_object() {
+            value_as_u64(stat.get("count").or_else(|| stat.get("uses")).or_else(|| stat.get("usage_count")))
+        } else {
+            value_as_u64(Some(stat))
+        };
+        let last_used_at = if stat.is_object() {
+            usage_timestamp(stat)
+        } else {
+            None
+        };
+        add_usage_event(
+            usage,
+            skill_name.to_string(),
+            count,
+            last_used_at,
+            Some("claude_code".to_string()),
+        );
+    }
+}
+
+fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
+    let mut usage: HashMap<String, SkillUsageStatDto> = HashMap::new();
+
+    let skiller_usage_dir = central_repo::base_dir().join("usage");
+    if skiller_usage_dir.is_dir() {
+        for entry in WalkDir::new(&skiller_usage_dir).into_iter().filter_map(Result::ok) {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("jsonl") {
+                collect_usage_jsonl(path, &mut usage);
+            }
+        }
+    }
+
+    if let Some(home) = dirs::home_dir() {
+        let claude_stats = home.join(".claude").join("skill-stats.json");
+        if claude_stats.is_file() {
+            collect_usage_json(&claude_stats, &mut usage);
+        }
+    }
+
+    let mut stats: Vec<_> = usage.into_values().collect();
+    for stat in &mut stats {
+        stat.agents.sort();
+    }
+    stats.sort_by(|a, b| {
+        b.last_used_at
+            .cmp(&a.last_used_at)
+            .then_with(|| b.count.cmp(&a.count))
+            .then_with(|| a.skill_name.cmp(&b.skill_name))
+    });
+    stats
+}
+
+#[tauri::command]
+pub async fn get_skill_usage_stats() -> Result<Vec<SkillUsageStatDto>, AppError> {
+    Ok(tauri::async_runtime::spawn_blocking(collect_usage_stats).await?)
 }
 
 pub fn update_git_skill_internal(
@@ -1589,7 +1751,7 @@ pub fn reimport_local_skill_internal(
         .map_err(AppError::db)?
         .ok_or_else(|| AppError::not_found("Skill not found"))?;
 
-    if !matches!(skill.source_type.as_str(), "local" | "import") {
+    if !matches!(skill.source_type.as_str(), "local") {
         return Err(AppError::invalid_input(
             "Only local skills can be reimported",
         ));
@@ -1805,7 +1967,7 @@ pub fn check_skill_update_internal(
                 }
             }
         }
-        "local" | "import" => {
+        "local" => {
             let (status, error): (&str, Option<String>) = match skill.source_ref.as_deref() {
                 Some(path) => {
                     let source_path = Path::new(path);
@@ -2297,6 +2459,92 @@ fn remove_path_if_exists(path: &Path) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Open the skill's source/update channel. Local skills open their central copy;
+/// git and skills.sh skills open their resolved remote URL.
+#[tauri::command]
+pub async fn open_skill_source(skill_id: String, store: State<'_, Arc<SkillStore>>) -> Result<(), AppError> {
+    let store = store.inner().clone();
+    let skill = store
+        .get_skill_by_id(&skill_id)
+        .map_err(AppError::db)?
+        .ok_or_else(|| AppError::not_found(format!("Skill '{}'", skill_id)))?;
+
+    match skill.source_type.as_str() {
+        "local" => {
+            // For local skills, open the central_path directory
+            let path = PathBuf::from(&skill.central_path);
+            if !path.exists() {
+                return Err(AppError::io(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Source directory not found: {}", path.display()),
+                )));
+            }
+            tauri_plugin_opener::open_path(&path, Option::<&str>::None).map_err(|e| {
+                AppError::io(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to open directory: {}", e),
+                ))
+            })?;
+        }
+        "git" => {
+            let url = skill.source_ref_resolved.or(skill.source_ref).ok_or_else(|| {
+                AppError::invalid_input(format!("No source URL available for skill: {}", skill.name))
+            })?;
+            tauri_plugin_opener::open_url(&url, Option::<&str>::None).map_err(|e| {
+                AppError::io(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to open URL: {}", e),
+                ))
+            })?;
+        }
+        "skillssh" => {
+            let url = skill.source_ref_resolved.ok_or_else(|| {
+                AppError::invalid_input(format!("No resolved source URL available for skill: {}", skill.name))
+            })?;
+            tauri_plugin_opener::open_url(&url, Option::<&str>::None).map_err(|e| {
+                AppError::io(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to open URL: {}", e),
+                ))
+            })?;
+        }
+        _ => {
+            return Err(AppError::invalid_input(format!(
+                "Unsupported source type: {}",
+                skill.source_type
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn open_skill_local_copy(skill_id: String, store: State<'_, Arc<SkillStore>>) -> Result<(), AppError> {
+    let store = store.inner().clone();
+    let skill = store
+        .get_skill_by_id(&skill_id)
+        .map_err(AppError::db)?
+        .ok_or_else(|| AppError::not_found(format!("Skill '{}'", skill_id)))?;
+
+    let path = PathBuf::from(&skill.central_path);
+    if !path.exists() {
+        return Err(AppError::io(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("Local copy directory not found: {}", path.display()),
+        )));
+    }
+
+    tauri_plugin_opener::open_path(&path, Option::<&str>::None).map_err(|e| {
+        AppError::io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to open directory: {}", e),
+        ))
+    })?;
+
+    Ok(())
+}
+
 /// Detect broken symlinks in a specific agent's skill directory.
 /// This command scans the given directory for symlinks that point to non-existent targets,
 /// and returns a list of broken symlink names.
@@ -2386,7 +2634,7 @@ mod tests {
             id: id.to_string(),
             name: name.to_string(),
             description: None,
-            source_type: "import".to_string(),
+            source_type: "local".to_string(),
             source_ref: Some(central_path.to_string_lossy().to_string()),
             source_ref_resolved: None,
             source_subpath: None,

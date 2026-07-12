@@ -16,14 +16,14 @@ export const syncStatusClass: Record<SyncStatusTone, string> = {
 export type AgentDotState = "synced" | "available" | "orphan";
 
 export const agentDotIconClass: Record<AgentDotState, string> = {
-  synced: "bg-surface",
-  available: "bg-surface opacity-45",
-  orphan: "ring-1 ring-inset ring-amber-500/60 bg-surface",
+  synced: "ring-1 ring-inset ring-accent/60 bg-accent/10 shadow-[0_0_0_1px_rgba(255,255,255,0.35)]",
+  available: "bg-surface opacity-25 grayscale contrast-75",
+  orphan: "ring-1 ring-inset ring-amber-500/60 bg-amber-500/10",
 };
 
 export const agentDotTextClass: Record<AgentDotState, string> = {
-  synced: "border-transparent bg-[var(--color-text-primary)] text-[var(--color-bg)]",
-  available: "border border-border-subtle bg-surface-hover text-faint",
+  synced: "border border-accent/60 bg-accent/15 text-accent-light shadow-[0_0_0_1px_rgba(255,255,255,0.25)]",
+  available: "border border-border-subtle bg-surface-hover text-faint opacity-55",
   orphan: "border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
 };
 

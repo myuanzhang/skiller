@@ -470,14 +470,14 @@ mod tests {
                     display_name: "Legacy Custom OMP".to_string(),
                     skills_dir: legacy_skills.to_string_lossy().into_owned(),
                     project_relative_skills_dir: Some(".legacy/skills".to_string()),
-                    category: ToolCategory::Lobster,
+                    category: ToolCategory::Personal,
                 },
                 CustomToolDef {
                     key: "custom_agent".to_string(),
                     display_name: "Custom Agent".to_string(),
                     skills_dir: tmp.path().join("custom-skills").to_string_lossy().into_owned(),
                     project_relative_skills_dir: Some(".custom/skills".to_string()),
-                    category: ToolCategory::Lobster,
+                    category: ToolCategory::Personal,
                 },
             ],
         )
@@ -502,7 +502,7 @@ mod tests {
                 display_name: "Legacy Custom OMP".to_string(),
                 skills_dir: legacy_skills.to_string_lossy().into_owned(),
                 project_relative_skills_dir: Some(".legacy/skills".to_string()),
-                category: ToolCategory::Lobster,
+                category: ToolCategory::Personal,
             }],
         )
         .unwrap();

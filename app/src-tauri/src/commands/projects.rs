@@ -501,6 +501,19 @@ pub async fn get_projects(store: State<'_, Arc<SkillStore>>) -> Result<Vec<Proje
     tauri::async_runtime::spawn_blocking(move || {
         let start = Instant::now();
         let records = store.get_all_projects().map_err(AppError::db)?;
+        // Auto-remove projects whose directory no longer exists.
+        let records: Vec<ProjectRecord> = {
+            let mut kept = Vec::new();
+            for rec in records {
+                if Path::new(&rec.path).is_dir() {
+                    kept.push(rec);
+                } else {
+                    log::info!("auto-removing missing project: {} ({})", rec.name, rec.path);
+                    let _ = store.delete_project(&rec.id);
+                }
+            }
+            kept
+        };
         let all_managed = store.get_all_skills().map_err(AppError::db)?;
         let configs = agent_skill_configs(&store);
         let count = records.len();

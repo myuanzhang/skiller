@@ -4,7 +4,7 @@ import { cn } from "../../utils";
 import type { ManagedSkill } from "../../lib/tauri";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../../lib/skillTags";
 
-type SourceFilter = "local" | "import" | "git" | "skillssh";
+type SourceFilter = "local" | "git" | "skillssh";
 
 interface MySkillsFilterBarProps {
   skills: ManagedSkill[];
@@ -31,7 +31,7 @@ export function MySkillsFilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-1 px-1 -mt-2 -mb-3">
-      {(["local", "import", "git", "skillssh"] as const).map((src) => (
+      {(["local", "git", "skillssh"] as const).map((src) => (
         <button
           key={src}
           onClick={() => onSourceFilterToggle(src)}

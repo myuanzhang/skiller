@@ -1,7 +1,7 @@
 import type { ToolCategory } from "../lib/tauri";
 
 /**
- * Drives a single category of the workspace (coding agents or lobster agents).
+ * Drives a single category of the workspace (coding agents or personal agents).
  * Most of the per-agent UX is shared across categories; only the top-level
  * page title, the empty state copy, the URL prefix, and the category filter
  * differ.
@@ -32,13 +32,13 @@ export const CODING_WORKSPACE_CONFIG: WorkspaceConfig = {
   },
 };
 
-export const LOBSTER_WORKSPACE_CONFIG: WorkspaceConfig = {
-  category: "lobster",
-  basePath: "/lobster-workspace",
+export const PERSONAL_WORKSPACE_CONFIG: WorkspaceConfig = {
+  category: "personal",
+  basePath: "/personal-workspace",
   i18nKeys: {
-    title: "lobsterWorkspace.title",
-    allAgentsTitle: "lobsterWorkspace.allAgents",
-    noAgents: "lobsterWorkspace.noAgents",
-    noAgentsHint: "lobsterWorkspace.noAgentsHint",
+    title: "personalWorkspace.title",
+    allAgentsTitle: "personalWorkspace.allAgents",
+    noAgents: "personalWorkspace.noAgents",
+    noAgentsHint: "personalWorkspace.noAgentsHint",
   },
 };

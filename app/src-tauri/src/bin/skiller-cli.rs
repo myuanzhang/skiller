@@ -967,7 +967,7 @@ fn run_update(
                     },
                 }
             }
-            "local" | "import" => {
+            "local" => {
                 match cmd::reimport_local_skill_internal(store, &skill.id) {
                     Ok(_) => UpdateReport {
                         skill_id: skill.id.clone(),

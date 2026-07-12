@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use tauri::Emitter;
 
-use super::{central_repo, skill_store::SkillStore, tool_adapters};
+use super::{app_state, central_repo, skill_store::SkillStore, tool_adapters};
 
 const APP_FS_CHANGED_EVENT: &str = "app-files-changed";
 const WATCH_RESCAN_INTERVAL: Duration = Duration::from_secs(3);
@@ -133,6 +133,28 @@ fn is_in_git_dir(path: &Path) -> bool {
         .any(|c| c.as_os_str() == std::ffi::OsStr::new(".git"))
 }
 
+const ORPHAN_SCAN_INTERVAL: Duration = Duration::from_secs(3);
+
+/// Run both orphan discovery (new dirs on disk not in DB) and missing-skill
+/// cleanup (DB records whose dirs were deleted), rate-limited to avoid
+/// excessive disk I/O on bursty FS events.
+fn reconcile_skills_with_disk(store: &SkillStore, last_scan: &mut Instant) {
+    if last_scan.elapsed() < ORPHAN_SCAN_INTERVAL {
+        return;
+    }
+    match app_state::cleanup_missing_skills(store) {
+        Ok(0) => {}
+        Ok(n) => log::info!("file watcher: cleaned up {n} missing skill(s)"),
+        Err(err) => log::debug!("file watcher: missing-skill cleanup failed: {err}"),
+    }
+    match app_state::discover_orphan_skills(store) {
+        Ok(0) => {}
+        Ok(n) => log::info!("file watcher: discovered {n} new orphan skill(s)"),
+        Err(err) => log::debug!("file watcher: orphan discovery failed: {err}"),
+    }
+    *last_scan = Instant::now();
+}
+
 pub fn start_file_watcher<R: tauri::Runtime>(app: tauri::AppHandle<R>, store: Arc<SkillStore>) {
     std::thread::spawn(move || {
         let (tx, rx) = std::sync::mpsc::channel();
@@ -152,12 +174,14 @@ pub fn start_file_watcher<R: tauri::Runtime>(app: tauri::AppHandle<R>, store: Ar
         let mut watched = HashSet::new();
         let mut last_sync = Instant::now() - WATCH_RESCAN_INTERVAL;
         let mut last_emit = Instant::now() - WATCH_EMIT_DEBOUNCE;
+        let mut last_orphan_scan = Instant::now() - WATCH_RESCAN_INTERVAL;
 
         loop {
             if last_sync.elapsed() >= WATCH_RESCAN_INTERVAL {
                 if sync_watch_set(&mut watcher, &mut watched, &store)
                     && last_emit.elapsed() >= WATCH_EMIT_DEBOUNCE
                 {
+                    reconcile_skills_with_disk(&store, &mut last_orphan_scan);
                     if let Err(err) = app.emit(APP_FS_CHANGED_EVENT, ()) {
                         log::debug!("Failed to emit app-files-changed: {err}");
                     } else {
@@ -172,6 +196,7 @@ pub fn start_file_watcher<R: tauri::Runtime>(app: tauri::AppHandle<R>, store: Ar
                     if !should_emit(&event) || last_emit.elapsed() < WATCH_EMIT_DEBOUNCE {
                         continue;
                     }
+                    reconcile_skills_with_disk(&store, &mut last_orphan_scan);
                     if let Err(err) = app.emit(APP_FS_CHANGED_EVENT, ()) {
                         log::debug!("Failed to emit app-files-changed: {err}");
                     } else {

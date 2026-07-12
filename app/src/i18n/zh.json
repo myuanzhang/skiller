@@ -7,6 +7,7 @@
     "mySkills": "技能中心",
     "globalWorkspace": "全局工作区",
     "lobsterAgents": "龙虾 Agent",
+    "personalAgents": "个人助手",
     "installSkills": "安装 Skills",
     "presets": "Preset",
     "newPreset": "新建 Preset",
@@ -174,6 +175,9 @@
     "sourceBranch": "分支",
     "sourceSubpath": "子路径",
     "sourceRevision": "版本",
+    "sourceOpenDir": "点击打开技能中心副本",
+    "sourceOpenUrl": "点击打开来源",
+    "sourceOpenFailed": "打开来源失败：{{message}}",
     "docTabs": {
       "local": "本地",
       "diff": "差异",
@@ -206,6 +210,11 @@
     "agentToggleNotInstalled": "未安装",
     "agentToggleDisabledGlobally": "已在设置中禁用",
     "agentUnavailableCount": "{{count}} 个不可用",
+    "usage": {
+      "short": "{{count}}次",
+      "count": "使用 {{count}} 次",
+      "lastUsed": "最近使用 {{time}}"
+    },
     "updateStatus": {
       "unknown": "未知",
       "checking": "检查中",
@@ -239,10 +248,10 @@
     },
     "sourceFilter": {
       "all": "全部来源",
-      "local": "本地",
+      "local": "本地副本",
       "import": "导入",
-      "git": "Git",
-      "skillssh": "skills.sh"
+      "git": "Git 来源",
+      "skillssh": "skills.sh 来源"
     },
     "tags": {
       "filter": "标签",
@@ -886,18 +895,18 @@
     "localSkills": {
       "searchPlaceholder": "搜索 Agent Skills…",
       "empty": "未发现本地 Skills",
-      "summary": "{{total}} / {{managed}} 个受管理 / {{synced}} 个已同步",
-      "upload": "上传",
+      "summary": "{{total}} 个 Skill / {{managed}} 个已纳管 / {{localOnly}} 个仅本地",
+      "upload": "纳管",
       "pull": "拉取",
       "removeManaged": "从 Agent 移除",
       "deleteLocal": "删除本地 Skill",
       "deleteLocalConfirmTitle": "删除本地 Skill？",
       "deleteLocalConfirmMessage": "从 {{agent}} 中删除“{{name}}”？此操作会删除本地文件且不可恢复。",
       "deletedLocalToast": "已从 {{agent}} 删除“{{name}}”。",
-      "uploadedToast": "已将“{{name}}”上传到 Skills 中心，未自动同步回 {{agent}}。",
+      "uploadedToast": "已将“{{name}}”上传到 Skills 中心，并纳管 {{agent}} 中的这份 Skill。",
       "pulledToast": "已从 Skills 中心更新 {{agent}} 中的“{{name}}”。",
-      "uploadConfirmTitle": "更新中心 Skill？",
-      "uploadConfirmMessage": "将“{{name}}”上传到匹配的 Skills 中心条目？这会替换中心副本。",
+      "uploadConfirmTitle": "纳管并更新中心 Skill？",
+      "uploadConfirmMessage": "将“{{name}}”纳管到匹配的 Skills 中心条目？这会替换中心副本，并把当前 Agent 中的这份 Skill 改为指向中心副本。",
       "pullConfirmTitle": "覆盖本地 Skill？",
       "pullConfirmMessage": "将 Skills 中心版本的“{{name}}”拉取到 {{agent}}？这会覆盖该 Agent 的本地副本。",
       "status": {
@@ -908,7 +917,17 @@
         "diverged": "冲突"
       },
       "statusFilter": "状态",
-      "allStatus": "全部状态"
+      "allStatus": "全部状态",
+      "detectBrokenSymlinks": "检测断链",
+      "brokenSymlinksDetected": "{{agent}} 中发现 {{count}} 个断链: {{names}}",
+      "noBrokenSymlinks": "{{agent}} 中未发现断链",
+      "detectBrokenFailed": "检测断链失败"
     }
+  },
+  "workspace": {
+    "detectBrokenSymlinks": "检测断链",
+    "brokenSymlinksDetected": "{{agent}} 中发现 {{count}} 个断链: {{names}}",
+    "noBrokenSymlinks": "{{agent}} 中未发现断链",
+    "detectBrokenFailed": "检测断链失败"
   }
 }

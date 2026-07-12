@@ -30,7 +30,7 @@ import { AgentIcon } from "./AgentIcon";
 import { SkillPickerRow } from "./SkillPickerRow";
 import { Button } from "./ui/Button";
 
-const SOURCE_PRIORITY = ["local", "import", "git", "skillssh"];
+const SOURCE_PRIORITY = ["local", "git", "skillssh"];
 const VISIBLE_TARGET_ICON_LIMIT = 5;
 
 export interface GlobalSheetTarget {

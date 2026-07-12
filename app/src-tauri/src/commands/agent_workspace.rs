@@ -109,6 +109,32 @@ fn target_matches_skill_path(
     path_matches_skill_path(skill_path, skill_canonical, &target.target_path)
 }
 
+fn adopt_agent_skill_target(
+    store: &SkillStore,
+    skill: &SkillRecord,
+    agent: &str,
+    target_path: &Path,
+) -> Result<(), AppError> {
+    let source = PathBuf::from(&skill.central_path);
+    sync_engine::remove_target(target_path).map_err(AppError::io)?;
+    let actual_mode = sync_engine::sync_skill(&source, target_path, sync_engine::SyncMode::Symlink)
+        .map_err(AppError::io)?;
+    let now = chrono::Utc::now().timestamp_millis();
+    let target_record = SkillTargetRecord {
+        id: uuid::Uuid::new_v4().to_string(),
+        skill_id: skill.id.clone(),
+        tool: agent.to_string(),
+        target_path: target_path.to_string_lossy().to_string(),
+        mode: actual_mode.as_str().to_string(),
+        status: "ok".to_string(),
+        synced_at: Some(now),
+        last_error: None,
+        source_hash: skill.content_hash.clone(),
+    };
+    store.insert_target(&target_record).map_err(AppError::db)?;
+    Ok(())
+}
+
 fn find_verified_center_match<'a>(
     skill: &project_scanner::ProjectSkillInfo,
     all_managed: &'a [SkillRecord],
@@ -261,12 +287,11 @@ fn import_agent_local_skill_to_center(
             )
             .map_err(AppError::db)?;
 
-        // Register this agent as a managed sync target so the adopted skill is
-        // recognized as managed (gives it a delete button). Reusing the regular
-        // sync path keeps the target consistent with every other managed skill:
-        // sync_engine owns the on-disk artifact, so later unsync/scenario-sync
-        // touch only that managed artifact, never the user's source.
-        scenario_service::sync_single_skill_to_tool(store, &existing.id, agent)?;
+        let updated = store
+            .get_skill_by_id(&existing.id)
+            .map_err(AppError::db)?
+            .ok_or_else(|| AppError::not_found("Skill not found"))?;
+        adopt_agent_skill_target(store, &updated, agent, &source_path)?;
         return Ok(());
     }
 
@@ -297,13 +322,14 @@ fn import_agent_local_skill_to_center(
     };
 
     store.insert_skill(&skill_record).map_err(AppError::db)?;
-    // Register the managed sync target (see note above). On failure, drop the
+    // Register the managed sync target and replace the agent-local directory
+    // with a symlink to the central copy. On failure, drop the
     // just-inserted skill row (which cascades to any target) so we never leave
     // an orphaned, button-less skill behind. We deliberately do NOT delete the
     // central directory: `install_from_local` may have de-duplicated onto a
     // directory shared with another skill, and removing it could corrupt that
     // skill — an orphaned dir is harmless by comparison.
-    if let Err(err) = scenario_service::sync_single_skill_to_tool(store, &skill_record.id, agent) {
+    if let Err(err) = adopt_agent_skill_target(store, &skill_record, agent, &source_path) {
         let _ = store.delete_skill(&skill_record.id);
         return Err(err);
     }

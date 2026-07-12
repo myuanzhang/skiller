@@ -3,7 +3,7 @@ use std::time::Instant;
 
 use anyhow::{Context, Result};
 
-use super::{central_repo, scenario_service, skill_store::SkillStore, sync_metadata, tool_service};
+use super::{central_repo, content_hash, scenario_service, skill_metadata, skill_store::SkillStore, sync_engine, sync_metadata, tool_service};
 
 /// Per-stage timings collected during `initialize_store`. The struct is
 /// returned to the caller so the log lines can be emitted once
@@ -16,6 +16,8 @@ pub struct StartupTimings {
     pub open_store_ms: u128,
     pub migrate_legacy_tool_keys_ms: u128,
     pub skill_count: usize,
+    pub orphan_discovery_count: usize,
+    pub missing_cleanup_count: usize,
     pub reindex_from_metadata_ms: Option<u128>,
     pub restore_sync_included_ms: u128,
     pub restore_sync_included_changed: bool,
@@ -36,6 +38,8 @@ impl Default for StartupTimings {
             open_store_ms: 0,
             migrate_legacy_tool_keys_ms: 0,
             skill_count: 0,
+            orphan_discovery_count: 0,
+            missing_cleanup_count: 0,
             reindex_from_metadata_ms: None,
             restore_sync_included_ms: 0,
             restore_sync_included_changed: false,
@@ -76,14 +80,24 @@ fn initialize_store_inner(
         .context("Failed to migrate legacy tool keys")?;
     timings.migrate_legacy_tool_keys_ms = step.elapsed().as_millis();
 
-    timings.skill_count = store.get_all_skills().map(|s| s.len()).unwrap_or(0);
-
     if sync_metadata::metadata_exists() {
         let step = Instant::now();
         sync_metadata::reindex_from_metadata(&store)
             .context("Failed to reindex from sync metadata")?;
         timings.reindex_from_metadata_ms = Some(step.elapsed().as_millis());
     }
+
+    let step = Instant::now();
+    timings.missing_cleanup_count = cleanup_missing_skills(&store)
+        .context("Failed to clean up missing skill records")?;
+    let _ = step.elapsed();
+
+    let step = Instant::now();
+    timings.orphan_discovery_count = discover_orphan_skills(&store)
+        .context("Failed to discover orphan skill directories")?;
+    let _ = step.elapsed();
+
+    timings.skill_count = store.get_all_skills().map(|s| s.len()).unwrap_or(0);
 
     let step = Instant::now();
     let changed = scenario_service::restore_all_skills_sync_included(&store)
@@ -114,6 +128,116 @@ fn initialize_store_inner(
 
     timings.total_ms = total_start.elapsed().as_millis();
     Ok((store, timings))
+}
+
+/// Scan the central skills directory for skill folders that exist on disk but
+/// have no corresponding row in the SQLite database (e.g. manually placed or
+/// left over from a prior version). Register them as "local"-sourced skills
+/// so they appear in the skill center. Returns the number of newly registered
+/// skills.
+pub(crate) fn discover_orphan_skills(store: &SkillStore) -> Result<usize> {
+    let skills_dir = central_repo::skills_dir();
+    if !skills_dir.is_dir() {
+        return Ok(0);
+    }
+
+    let existing = store.get_all_skills()?;
+    let known_paths: std::collections::HashSet<String> = existing
+        .iter()
+        .map(|s| s.central_path.clone())
+        .collect();
+
+    let mut discovered = 0usize;
+    let entries = match std::fs::read_dir(&skills_dir) {
+        Ok(e) => e,
+        Err(_) => return Ok(0),
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        // Skip the metadata directory and hidden dot-dirs.
+        if name.starts_with('.') {
+            continue;
+        }
+        let path_str = path.to_string_lossy().to_string();
+        if known_paths.contains(&path_str) {
+            continue;
+        }
+        // Must contain SKILL.md or skill.md to be considered a skill.
+        if !skill_metadata::is_valid_skill_dir(&path) {
+            continue;
+        }
+
+        let meta = skill_metadata::parse_skill_md(&path);
+        let display_name = meta.name.unwrap_or_else(|| skill_metadata::infer_skill_name(&path));
+        let description = meta.description;
+        let content_hash = content_hash::hash_directory(&path).ok();
+        let now = chrono::Utc::now().timestamp_millis();
+
+        let record = super::skill_store::SkillRecord {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: display_name.clone(),
+            description,
+            source_type: "local".to_string(),
+            source_ref: None,
+            source_ref_resolved: None,
+            source_subpath: None,
+            source_branch: None,
+            source_revision: None,
+            remote_revision: None,
+            central_path: path_str,
+            content_hash,
+            enabled: true,
+            created_at: now,
+            updated_at: now,
+            status: "ok".to_string(),
+            update_status: "local_only".to_string(),
+            last_checked_at: Some(now),
+            last_check_error: None,
+        };
+        store.insert_skill(&record)?;
+        discovered += 1;
+        log::info!("discovered orphan skill: {} ({})", display_name, name);
+    }
+
+    if discovered > 0 {
+        sync_metadata::write_all_from_db(store)?;
+    }
+    Ok(discovered)
+}
+
+/// Remove database records for skills whose central directory no longer exists
+/// on disk (e.g. the user manually deleted the skill folder). Also cleans up
+/// any deployed target symlinks pointing to the missing skill. Returns the
+/// number of records removed.
+pub(crate) fn cleanup_missing_skills(store: &SkillStore) -> Result<usize> {
+    let existing = store.get_all_skills()?;
+    let mut removed = 0usize;
+
+    for skill in &existing {
+        let path = std::path::Path::new(&skill.central_path);
+        if path.exists() {
+            continue;
+        }
+        if let Ok(targets) = store.get_targets_for_skill(&skill.id) {
+            for target in &targets {
+                let target_path = std::path::PathBuf::from(&target.target_path);
+                let _ = sync_engine::remove_target(&target_path);
+            }
+        }
+        store.delete_skill(&skill.id)?;
+        removed += 1;
+        log::info!("auto-removing missing skill: {} ({})", skill.name, skill.central_path);
+    }
+
+    if removed > 0 {
+        sync_metadata::write_all_from_db(store)?;
+    }
+    Ok(removed)
 }
 
 impl StartupTimings {
@@ -158,5 +282,17 @@ impl StartupTimings {
             self.apply_scenario_ms,
             self.skill_count
         );
+        if self.missing_cleanup_count > 0 {
+            log::info!(
+                "startup: cleanup_missing_skills removed {} skills",
+                self.missing_cleanup_count
+            );
+        }
+        if self.orphan_discovery_count > 0 {
+            log::info!(
+                "startup: discover_orphan_skills registered {} skills",
+                self.orphan_discovery_count
+            );
+        }
     }
 }

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ManagedSkill, ToolInfo } from "../lib/tauri";
@@ -60,6 +61,10 @@ export function SyncDots({
   pendingKey,
 }: Props) {
   const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const moreButtonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const syncedKeys = new Set(skill.targets.map((t) => t.tool));
   const activeTools = tools.filter((t) => t.installed && t.enabled);
   const activeKeys = new Set(activeTools.map((t) => t.key));
@@ -82,8 +87,19 @@ export function SyncDots({
     }
   }
 
-  const visible = typeof limit === "number" ? dots.slice(0, limit) : dots;
-  const hiddenCount = dots.length - visible.length;
+  const statePriority: Record<DotState, number> = {
+    synced: 0,
+    available: 1,
+    orphan: 2,
+  };
+  const orderedDots = dots
+    .map((dot, index) => ({ dot, index }))
+    .sort((a, b) => statePriority[a.dot.state] - statePriority[b.dot.state] || a.index - b.index)
+    .map(({ dot }) => dot);
+
+  const visible = typeof limit === "number" ? orderedDots.slice(0, limit) : orderedDots;
+  const hidden = typeof limit === "number" ? orderedDots.slice(limit) : [];
+  const hiddenCount = orderedDots.length - visible.length;
 
   const dim = size === "sm"
     ? "h-[16px] w-[16px] text-[8px]"
@@ -99,6 +115,35 @@ export function SyncDots({
     synced: ` · ${t("mySkills.targetClickUninstall")}`,
     available: ` · ${t("mySkills.targetClickInstall")}`,
     orphan: ` · ${t("mySkills.targetClickUninstall")}`,
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (event: globalThis.MouseEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target) || moreButtonRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const toggleHiddenMenu = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + 6,
+      left: Math.min(rect.left, window.innerWidth - 240),
+    });
+    setMenuOpen((value) => !value);
   };
 
   return (
@@ -152,7 +197,72 @@ export function SyncDots({
           </span>
         );
       })}
-      {hiddenCount > 0 && (
+      {hiddenCount > 0 && (onToggle ? (
+        <>
+          <button
+            ref={moreButtonRef}
+            type="button"
+            title={`+${hiddenCount} more agents`}
+            aria-label={`+${hiddenCount} more agents`}
+            onClick={toggleHiddenMenu}
+            className={cn(
+              "inline-flex select-none items-center justify-center rounded-control transition-colors hover:ring-1 hover:ring-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              hiddenAgentDotClass,
+              dim,
+              menuOpen && "ring-1 ring-accent/60"
+            )}
+          >
+            +{hiddenCount}
+          </button>
+          {menuOpen && menuPosition && (
+            <div
+              ref={menuRef}
+              className="fixed z-[70] max-h-72 w-60 overflow-y-auto rounded-lg border border-border bg-surface p-1.5 shadow-lg"
+              style={{ top: menuPosition.top, left: menuPosition.left }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {hidden.map((dot) => {
+                const useIcon = hasAgentIcon(dot.key);
+                const isPending = pendingKey === dot.key;
+                const title = `${dot.displayName}${stateTitle[dot.state]}${clickHint[dot.state]}`;
+                return (
+                  <button
+                    key={dot.key}
+                    type="button"
+                    disabled={isPending}
+                    title={title}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onToggle(dot.key, dot.state === "available");
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] text-secondary transition-colors hover:bg-surface-hover disabled:opacity-60"
+                  >
+                    <span
+                      className={cn(
+                        "inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center overflow-hidden rounded-control",
+                        useIcon ? agentDotIconClass[dot.state] : cn("border font-mono text-[9px] font-semibold tracking-tight", agentDotTextClass[dot.state])
+                      )}
+                    >
+                      {isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin text-muted" />
+                      ) : useIcon ? (
+                        <AgentIcon
+                          agentKey={dot.key}
+                          className="h-full w-full rounded-control border-0 bg-transparent"
+                        />
+                      ) : (
+                        shortLabel(dot.displayName, dot.key)
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{dot.displayName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
         <span
           title={`+${hiddenCount} more agents`}
           className={cn(
@@ -163,7 +273,7 @@ export function SyncDots({
         >
           +{hiddenCount}
         </span>
-      )}
+      ))}
     </div>
   );
 }

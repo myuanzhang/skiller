@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
-import { Loader2, Square, SquareCheck } from "lucide-react";
+import { FolderOpen, Loader2, Square, SquareCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { SyncDots } from "../../components/SyncDots";
 import { SkillCardShell } from "../../components/ui/SkillCardShell";
-import type { ManagedSkill, ToolInfo } from "../../lib/tauri";
+import type { ManagedSkill, SkillUsageStat, ToolInfo } from "../../lib/tauri";
+import * as api from "../../lib/tauri";
 import { getTagColor } from "../../lib/skillTags";
 import { cn } from "../../utils";
 import { SkillCardActions } from "./SkillCardActions";
@@ -33,6 +36,7 @@ interface SkillListCardProps {
   sourceLabel: string;
   tools: ToolInfo[];
   pendingToolKey: string | null;
+  usage?: SkillUsageStat;
   onClick: () => void;
   onRelinkSource: (skill: ManagedSkill) => void;
   onDetachSource: (skill: ManagedSkill) => void;
@@ -64,6 +68,7 @@ export function SkillListCard({
   sourceLabel,
   tools,
   pendingToolKey,
+  usage,
   onClick,
   onRelinkSource,
   onDetachSource,
@@ -73,6 +78,35 @@ export function SkillListCard({
   onDeleteSkill,
   onToggleSkillTarget,
 }: SkillListCardProps) {
+  const { t } = useTranslation();
+  const usageTitle = usage
+    ? [
+        t("mySkills.usage.count", { count: usage.count }),
+        usage.last_used_at ? t("mySkills.usage.lastUsed", { time: new Date(usage.last_used_at).toLocaleString() }) : null,
+        usage.agents.length > 0 ? usage.agents.join(", ") : null,
+      ].filter(Boolean).join(" · ")
+    : "";
+
+  const handleSourceClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.openSkillSource(skill.id);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("mySkills.sourceOpenFailed", { message }));
+    }
+  };
+
+  const handleLocalCopyClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.openSkillLocalCopy(skill.id);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("mySkills.sourceOpenFailed", { message }));
+    }
+  };
+
   return (
     <SkillCardShell
       viewMode="list"
@@ -93,13 +127,21 @@ export function SkillListCard({
       )}
 
       <h3
-        className="w-[180px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
+        className={cn(
+          "w-[180px] shrink-0 truncate text-[14px] font-semibold group-hover:text-primary",
+          isMissingLocalSource
+            ? "text-faint line-through decoration-border-subtle"
+            : "text-secondary"
+        )}
         title={displayName}
       >
         {displayName}
       </h3>
 
-      <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
+      <p className={cn(
+        "min-w-0 flex-1 truncate text-[13px]",
+        isMissingLocalSource ? "text-faint line-through decoration-border-subtle/50" : "text-muted"
+      )}>
         {skill.description || "—"}
       </p>
 
@@ -128,6 +170,14 @@ export function SkillListCard({
             {badge.label}
           </span>
         )}
+        {usage && usage.count > 0 && (
+          <span
+            className="rounded-full bg-accent-bg px-2 py-0.5 text-[12px] font-medium text-accent-light"
+            title={usageTitle}
+          >
+            {t("mySkills.usage.short", { count: usage.count })}
+          </span>
+        )}
         <SyncDots
           skill={skill}
           tools={tools}
@@ -136,10 +186,34 @@ export function SkillListCard({
           onToggle={isMultiSelect ? undefined : onToggleSkillTarget}
           pendingKey={pendingToolKey}
         />
-        <span className="inline-flex items-center gap-1 text-[13px] text-muted">
-          {sourceIcon}
-          {sourceLabel}
-        </span>
+        {skill.source_type === "local" ? (
+          <button
+            onClick={handleLocalCopyClick}
+            className="inline-flex items-center justify-center rounded-control p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+            title={t("mySkills.sourceOpenDir")}
+          >
+            <FolderOpen className="h-3 w-3" />
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={handleLocalCopyClick}
+              className="inline-flex items-center justify-center rounded-control p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+              title={t("mySkills.sourceOpenDir")}
+            >
+              <FolderOpen className="h-3 w-3" />
+            </button>
+            <span className="text-faint">|</span>
+            <button
+              onClick={handleSourceClick}
+              className="inline-flex items-center gap-1 text-[13px] text-muted transition-colors hover:text-secondary"
+              title={skill.source_ref || skill.source_ref_resolved ? t("mySkills.sourceOpenUrl") : undefined}
+            >
+              {sourceIcon}
+              {sourceLabel}
+            </button>
+          </>
+        )}
         {active && (
           <span className="text-[13px] font-medium text-amber-600 dark:text-amber-400/80">
             {viewedPresetName}

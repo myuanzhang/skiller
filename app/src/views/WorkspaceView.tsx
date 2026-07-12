@@ -275,7 +275,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const localDetailRequestRef = useRef(0);
 
   // Cross-category redirect: a deep link like /global-workspace/openclaw should
-  // land on /lobster-workspace/openclaw. Compute it before any filtering so a
+  // land on /personal-workspace/openclaw. Compute it before any filtering so a
   // category mismatch doesn't briefly render "agent not found".
   const requestedTool = useMemo(
     () => (agentKey ? tools.find((t) => t.key === agentKey) ?? null : null),
@@ -286,8 +286,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     !!requestedTool &&
     requestedTool.category !== config.category;
   const redirectTarget = needsRedirect && requestedTool
-    ? (requestedTool.category === "lobster"
-        ? `/lobster-workspace/${requestedTool.key}`
+    ? (requestedTool.category === "personal"
+        ? `/personal-workspace/${requestedTool.key}`
         : `/global-workspace/${requestedTool.key}`)
     : null;
 
@@ -472,11 +472,6 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     return order.filter((status) => present.has(status));
   }, [localSkills]);
 
-  const inSyncLocalCount = useMemo(
-    () => localSkills.filter((skill) => skill.sync_status === "in_sync").length,
-    [localSkills]
-  );
-
   const installedIds = useMemo(() => new Set(agentSkills.map((s) => s.id)), [agentSkills]);
 
   const managedLocalIds = useMemo(
@@ -492,6 +487,11 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const managedLocalCount = useMemo(
     () => localSkills.filter((skill) => !!skill.center_skill_id && managedLocalIds.has(skill.center_skill_id)).length,
     [localSkills, managedLocalIds]
+  );
+
+  const localOnlyCount = useMemo(
+    () => localSkills.filter((skill) => !skill.center_skill_id).length,
+    [localSkills]
   );
 
   const handleRemoveLocalManagedSkill = async (skill: ProjectSkill) => {
@@ -636,7 +636,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     const canPull = skill.sync_status === "center_newer" || skill.sync_status === "diverged";
     const isInSync = skill.sync_status === "in_sync";
     const isManaged = !!skill.center_skill_id && managedLocalIds.has(skill.center_skill_id);
-    const canDeleteLocal = !isManaged && skill.sync_status === "project_only";
+    const canAdoptLocal = !isManaged;
+    const canDeleteLocal = !isManaged;
     const removing = removingLocalSkillId === skill.relative_path;
     const buttonClassName = variant === "grid"
       ? "rounded px-2 py-1 text-[13px] font-medium text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
@@ -662,8 +663,6 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
       );
     }
 
-    if (isInSync && !isManaged) return null;
-
     return (
       <>
         {!isInSync && canPull && (
@@ -684,11 +683,11 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           </button>
         )}
 
-        {!isInSync && (
+        {canAdoptLocal && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (skill.sync_status === "project_only") {
+              if (skill.sync_status === "project_only" || skill.sync_status === "in_sync") {
                 void handleUploadLocalSkill(skill);
               } else {
                 setUploadConfirmSkill(skill);
@@ -838,7 +837,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               {t("globalWorkspace.localSkills.summary", {
                 total: localSkills.length,
                 managed: managedLocalCount,
-                synced: inSyncLocalCount,
+                localOnly: localOnlyCount,
               })}
             </p>
           </div>

@@ -405,7 +405,7 @@ impl From<PresetApplyMode> for BatchApplyMode {
 /// agent (`ToolCategory::Coding`). Mirrors the PresetBar behavior in the
 /// global workspace view but covers all enabled coding agents at once.
 ///
-/// Lobster agents are intentionally excluded — they have their own workspace
+/// Personal agents are intentionally excluded — they have their own workspace
 /// and their own preset bar.
 #[tauri::command]
 pub async fn apply_preset_to_coding_agents(
@@ -459,7 +459,7 @@ mod tests {
             id: id.to_string(),
             name: name.to_string(),
             description: None,
-            source_type: "import".to_string(),
+            source_type: "local".to_string(),
             source_ref: Some(central_path.to_string_lossy().to_string()),
             source_ref_resolved: None,
             source_subpath: None,

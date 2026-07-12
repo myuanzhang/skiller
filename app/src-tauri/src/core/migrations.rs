@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use rusqlite::Connection;
 
 /// Current schema version. Bump this when adding a new migration.
-const LATEST_VERSION: u32 = 6;
+const LATEST_VERSION: u32 = 7;
 
 /// Run all pending migrations on the database.
 ///
@@ -53,6 +53,7 @@ fn migrate_step(conn: &Connection, from_version: u32) -> Result<()> {
         3 => migrate_v3_to_v4(conn),
         4 => migrate_v4_to_v5(conn),
         5 => migrate_v5_to_v6(conn),
+        6 => migrate_v6_to_v7(conn),
         _ => bail!("unknown migration version: {from_version}"),
     }
 }
@@ -272,6 +273,17 @@ fn migrate_v4_to_v5(conn: &Connection) -> Result<()> {
 /// forces one copy on the first post-upgrade sync. No backfill needed.
 fn migrate_v5_to_v6(conn: &Connection) -> Result<()> {
     add_column_if_missing(conn, "skill_targets", "source_hash", "TEXT")?;
+    Ok(())
+}
+
+/// v6 → v7: Collapse the "import" source_type into "local". They were
+/// functionally identical (both were local-only, no remote tracking) but
+/// had separate labels causing confusion in the skill center UI.
+fn migrate_v6_to_v7(conn: &Connection) -> Result<()> {
+    conn.execute(
+        "UPDATE skills SET source_type = 'local' WHERE source_type = 'import'",
+        [],
+    )?;
     Ok(())
 }
 

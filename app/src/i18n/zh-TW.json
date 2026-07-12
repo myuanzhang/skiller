@@ -6,7 +6,7 @@
     "dashboard": "Dashboard",
     "mySkills": "技能庫",
     "globalWorkspace": "全域工作區",
-    "lobsterAgents": "龍蝦 Agent",
+    "personalAgents": "個人助手",
     "installSkills": "安裝 Skills",
     "presets": "Preset",
     "newPreset": "新增 Preset",
@@ -123,6 +123,11 @@
     "agentToggleNotInstalled": "未安裝",
     "agentToggleDisabledGlobally": "已在設定中停用",
     "agentUnavailableCount": "{{count}} 個不可用",
+    "usage": {
+      "short": "{{count}}次",
+      "count": "使用 {{count}} 次",
+      "lastUsed": "最近使用 {{time}}"
+    },
     "moreAgents": "+{{count}} 個 Agent",
     "syncMissing": "補齊 {{count}}",
     "unsyncSelected": "取消 {{count}}",
@@ -207,12 +212,23 @@
       "available": "當前 Preset 未啟用"
     },
     "sourceType": "來源類型",
+    "sourceRef": "來源位置",
+    "sourceResolved": "解析後來源",
+    "sourceBranch": "分支",
+    "sourceSubpath": "子路徑",
+    "sourceRevision": "版本",
+    "sourceOpenDir": "點擊開啟技能中心副本",
+    "sourceOpenUrl": "點擊開啟來源",
+    "sourceOpenFailed": "開啟來源失敗：{{message}}",
+    "detectBrokenSymlinks": "檢測斷鏈",
+    "brokenSymlinksDetected": "發現 {{count}} 個斷鏈技能：{{names}}",
+    "noBrokenSymlinks": "未發現斷鏈技能",
+    "detectBrokenFailed": "檢測斷鏈失敗：{{message}}",
     "sourceFilter": {
       "all": "全部來源",
-      "local": "本機",
-      "import": "匯入",
-      "git": "Git",
-      "skillssh": "skills.sh"
+      "local": "本機副本",
+      "git": "Git 來源",
+      "skillssh": "skills.sh 來源"
     },
     "tags": {
       "filter": "標籤",
@@ -766,11 +782,11 @@
     "skillCount": "{{count}} 個 Skills",
     "deactivateConfirm": "從 \"{{name}}\" 中移除全部 {{count}} 個已安裝 Skills？"
   },
-  "lobsterWorkspace": {
-    "title": "龍蝦 Agent",
-    "allAgents": "全部龍蝦 Agent",
-    "noAgents": "尚未安裝任何龍蝦 Agent",
-    "noAgentsHint": "安裝 OpenClaw、Hermes Agent 或其他龍蝦類個人助手後會自動出現在這裡。"
+  "personalWorkspace": {
+    "title": "個人助手",
+    "allAgents": "全部個人助手",
+    "noAgents": "尚未安裝任何個人助手",
+    "noAgentsHint": "安裝 OpenClaw、Hermes Agent、WorkBuddy 或其他個人助手類 Agent 後會自動出現在這裡。"
   },
   "globalWorkspace": {
     "title": "全域工作區",
@@ -802,18 +818,18 @@
     "localSkills": {
       "searchPlaceholder": "搜尋 Agent Skills…",
       "empty": "未發現本機 Skills",
-      "summary": "{{total}} / {{managed}} 個受管理 / {{synced}} 個已同步",
-      "upload": "上傳",
+      "summary": "{{total}} 個 Skill / {{managed}} 個已納管 / {{localOnly}} 個僅本機",
+      "upload": "納管",
       "pull": "拉取",
       "removeManaged": "從 Agent 移除",
       "deleteLocal": "刪除本機 Skill",
       "deleteLocalConfirmTitle": "刪除本機 Skill？",
       "deleteLocalConfirmMessage": "從 {{agent}} 中刪除「{{name}}」？此操作會刪除本機檔案且不可復原。",
       "deletedLocalToast": "已從 {{agent}} 刪除「{{name}}」。",
-      "uploadedToast": "已將「{{name}}」上傳到 Skills 中心，未自動同步回 {{agent}}。",
+      "uploadedToast": "已將「{{name}}」上傳到 Skills 中心，並納管 {{agent}} 中的這份 Skill。",
       "pulledToast": "已從 Skills 中心更新 {{agent}} 中的「{{name}}」。",
-      "uploadConfirmTitle": "更新中心 Skill？",
-      "uploadConfirmMessage": "將「{{name}}」上傳到匹配的 Skills 中心項目？這會替換中心副本。",
+      "uploadConfirmTitle": "納管並更新中心 Skill？",
+      "uploadConfirmMessage": "將「{{name}}」納管到匹配的 Skills 中心項目？這會替換中心副本，並把當前 Agent 中的這份 Skill 改為指向中心副本。",
       "pullConfirmTitle": "覆蓋本機 Skill？",
       "pullConfirmMessage": "將 Skills 中心版本的「{{name}}」拉取到 {{agent}}？這會覆蓋該 Agent 的本機副本。",
       "status": {
@@ -824,7 +840,17 @@
         "diverged": "衝突"
       },
       "statusFilter": "狀態",
-      "allStatus": "全部狀態"
+      "allStatus": "全部狀態",
+      "detectBrokenSymlinks": "檢測斷鏈",
+      "brokenSymlinksDetected": "{{agent}} 中發現 {{count}} 個斷鏈：{{names}}",
+      "noBrokenSymlinks": "{{agent}} 中未發現斷鏈",
+      "detectBrokenFailed": "檢測斷鏈失敗"
     }
+  },
+  "workspace": {
+    "detectBrokenSymlinks": "檢測斷鏈",
+    "brokenSymlinksDetected": "{{agent}} 中發現 {{count}} 個斷鏈：{{names}}",
+    "noBrokenSymlinks": "{{agent}} 中未發現斷鏈",
+    "detectBrokenFailed": "檢測斷鏈失敗"
   }
 }

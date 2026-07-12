@@ -76,6 +76,15 @@ pub fn has_complete_skill_snapshot() -> bool {
     metadata_dir().join("schema.json").is_file() && metadata_dir().join("skills").is_dir()
 }
 
+/// Normalize legacy source_type values to their current canonical form.
+/// Used when reading metadata files written by older app versions.
+fn normalize_source_type(s: &str) -> String {
+    match s {
+        "import" => "local".to_string(),
+        other => other.to_string(),
+    }
+}
+
 #[allow(dead_code)]
 pub fn write_all_from_db(store: &SkillStore) -> Result<()> {
     // Foreground wait: this runs at startup and from CLI preset/enable
@@ -172,7 +181,7 @@ pub(crate) fn reindex_from_metadata_unlocked(store: &SkillStore) -> Result<()> {
             .filter(|s| !s.trim().is_empty())
             .unwrap_or(inferred_name);
         let previous = existing_by_id.get(&meta.skill_id);
-        let source_ref = if matches!(meta.source.source_type.as_str(), "import" | "local") {
+        let source_ref = if matches!(meta.source.source_type.as_str(), "local") {
             previous.and_then(|s| s.source_ref.clone())
         } else {
             meta.source.ref_.clone()
@@ -189,7 +198,7 @@ pub(crate) fn reindex_from_metadata_unlocked(store: &SkillStore) -> Result<()> {
             id: meta.skill_id.clone(),
             name,
             description: parsed.description,
-            source_type: meta.source.source_type.clone(),
+            source_type: normalize_source_type(&meta.source.source_type),
             source_ref,
             source_ref_resolved: previous.and_then(|s| s.source_ref_resolved.clone()),
             source_subpath: meta.source.subpath.clone(),
@@ -395,7 +404,7 @@ fn write_skill_file(skill: &SkillRecord, tags: &[String]) -> Result<()> {
     let path = relative_skill_path(&skill.central_path)?;
     let tags = sorted_tags(tags);
     let source_ref = match skill.source_type.as_str() {
-        "import" | "local" => None,
+        "local" => None,
         _ => skill.source_ref.clone(),
     };
     let meta = SkillMetaFile {
@@ -674,7 +683,7 @@ mod tests {
             id: id.to_string(),
             name: id.to_string(),
             description: None,
-            source_type: "import".to_string(),
+            source_type: "local".to_string(),
             source_ref: Some(central_path.to_string_lossy().to_string()),
             source_ref_resolved: None,
             source_subpath: None,

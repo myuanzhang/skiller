@@ -36,7 +36,7 @@ import type {
   GitBackupStatus,
   GitBackupVersion,
   GitUpstreamHealth,
-  SkillToolToggle,
+  SkillUsageStat,
 } from "../lib/tauri";
 import { getErrorMessage, getErrorKind } from "../lib/error";
 import {
@@ -150,8 +150,6 @@ export function MySkills() {
   const [checkingSkillId, setCheckingSkillId] = useState<string | null>(null);
   const [updatingSkillId, setUpdatingSkillId] = useState<string | null>(null);
   const [batchUpdating, setBatchUpdating] = useState(false);
-  const [toolToggles, setToolToggles] = useState<SkillToolToggle[] | null>(null);
-  const [togglingToolKey, setTogglingToolKey] = useState<string | null>(null);
   const [togglingTarget, setTogglingTarget] = useState<{ skillId: string; tool: string } | null>(null);
   const [gitStatus, setGitStatus] = useState<GitBackupStatus | null>(null);
   const [gitLoading, setGitLoading] = useState<string | null>(null); // "start" | "sync"
@@ -172,6 +170,7 @@ export function MySkills() {
   const [tagEditSkillId, setTagEditSkillId] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState("");
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const [usageBySkillName, setUsageBySkillName] = useState<Record<string, SkillUsageStat>>({});
 
   const [presetSkillOrder, setPresetSkillOrder] = useState<string[]>([]);
 
@@ -494,6 +493,21 @@ export function MySkills() {
   }, [refreshGitStatus]);
 
   useEffect(() => {
+    let cancelled = false;
+    api.getSkillUsageStats()
+      .then((stats) => {
+        if (cancelled) return;
+        setUsageBySkillName(Object.fromEntries(stats.map((stat) => [stat.skill_name, stat])));
+      })
+      .catch(() => {
+        if (!cancelled) setUsageBySkillName({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [skills]);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       refreshGitStatusLocal();
     }, 400);
@@ -505,54 +519,6 @@ export function MySkills() {
       refreshGitVersions();
     }
   }, [gitVersionsOpen, gitStatus?.is_repo, refreshGitVersions]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadToggles = async () => {
-      if (!selectedSkill || !viewedPreset) {
-        setToolToggles(null);
-        return;
-      }
-      if (!selectedSkill.preset_ids.includes(viewedPreset.id)) {
-        setToolToggles(null);
-        return;
-      }
-      try {
-        const toggles = await api.getSkillToolToggles(selectedSkill.id, viewedPreset.id);
-        if (!cancelled) setToolToggles(toggles);
-      } catch {
-        if (!cancelled) setToolToggles(null);
-      }
-    };
-    loadToggles();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedSkill, viewedPreset]);
-
-  const handleToggleSkillTool = async (toolKey: string, enabled: boolean) => {
-    if (!selectedSkill || !viewedPreset) return;
-    setTogglingToolKey(toolKey);
-    try {
-      await api.setSkillToolToggle(selectedSkill.id, viewedPreset.id, toolKey, enabled);
-      const displayName = getToolDisplayName(toolKey, tools);
-      toast.success(
-        enabled
-          ? t("mySkills.agentToggleEnabled", { agent: displayName })
-          : t("mySkills.agentToggleDisabled", { agent: displayName })
-      );
-      const [, toggles] = await Promise.all([
-        refreshManagedSkills(),
-        api.getSkillToolToggles(selectedSkill.id, viewedPreset.id),
-      ]);
-      setToolToggles(toggles);
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t("common.error")));
-      await refreshManagedSkills();
-    } finally {
-      setTogglingToolKey(null);
-    }
-  };
 
   const handleToggleSkillTarget = useCallback(
     async (skill: ManagedSkill, toolKey: string, enabled: boolean) => {
@@ -803,7 +769,7 @@ export function MySkills() {
   const handleRefreshSkill = async (skill: ManagedSkill) => {
     setUpdatingSkillId(skill.id);
     try {
-      if (skill.source_type === "local" || skill.source_type === "import") {
+      if (skill.source_type === "local") {
         await api.reimportLocalSkill(skill.id);
         toast.success(t("mySkills.updateActions.reimported"));
       } else {
@@ -1163,7 +1129,6 @@ export function MySkills() {
       case "skillssh":
         return <Github className="h-3 w-3" />;
       case "local":
-      case "import":
         return <HardDrive className="h-3 w-3" />;
       default:
         return <Globe className="h-3 w-3" />;
@@ -1173,7 +1138,7 @@ export function MySkills() {
   const canRefresh = (skill: ManagedSkill) =>
     skill.source_type === "git" ||
     skill.source_type === "skillssh" ||
-    ((skill.source_type === "local" || skill.source_type === "import") && !!skill.source_ref);
+    (skill.source_type === "local" && !!skill.source_ref);
 
   const anyRefreshableSelected = useMemo(
     () => skills.some((skill) => selectedIds.has(skill.id) && canRefresh(skill)),
@@ -1189,7 +1154,7 @@ export function MySkills() {
   );
 
   const sourceTypeLabel = (skill: ManagedSkill) =>
-    skill.source_type === "skillssh" ? "skills.sh" : skill.source_type;
+    t(`mySkills.sourceFilter.${skill.source_type}`, { defaultValue: skill.source_type });
 
   const formatGitDateTime = (iso: string) => {
     if (!iso) return "—";
@@ -1214,7 +1179,7 @@ export function MySkills() {
   };
 
   const refreshLabel = (skill: ManagedSkill) =>
-    skill.source_type === "local" || skill.source_type === "import"
+    skill.source_type === "local"
       ? t("mySkills.updateActions.reimport")
       : t("mySkills.updateActions.update");
 
@@ -1419,7 +1384,7 @@ export function MySkills() {
             const badge = statusBadge(skill);
             const isMissingLocalSource =
               skill.update_status === "source_missing"
-              && (skill.source_type === "local" || skill.source_type === "import");
+              && skill.source_type === "local";
             const displayName = skillDisplayNames.get(skill.id) || skill.name;
 
             if (viewMode === "grid") {
@@ -1456,6 +1421,7 @@ export function MySkills() {
                   sourceLabel={sourceTypeLabel(skill)}
                   tools={tools}
                   pendingToolKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
+                  usage={usageBySkillName[skill.name]}
                   onClick={() =>
                     isMultiSelect ? toggleSelect(skill.id) : openSkillDetailById(skill.id)
                   }
@@ -1501,6 +1467,7 @@ export function MySkills() {
                 sourceLabel={sourceTypeLabel(skill)}
                 tools={tools}
                 pendingToolKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
+                usage={usageBySkillName[skill.name]}
                 onClick={() =>
                   isMultiSelect ? toggleSelect(skill.id) : openSkillDetailById(skill.id)
                 }
@@ -1526,11 +1493,11 @@ export function MySkills() {
         skill={selectedSkill}
         onClose={closeSkillDetail}
         tools={tools}
-        toolToggles={toolToggles}
-        togglingTool={togglingToolKey}
-        onToggleTool={handleToggleSkillTool}
+        pendingToolKey={togglingTarget && togglingTarget.skillId === selectedSkill?.id ? togglingTarget.tool : null}
+        onToggleTarget={(toolKey, enabled) => selectedSkill && handleToggleSkillTarget(selectedSkill, toolKey, enabled)}
         projects={projects}
         onProjectsChanged={refreshProjects}
+        allTags={allTags}
       />
 
       <MySkillsDialogs

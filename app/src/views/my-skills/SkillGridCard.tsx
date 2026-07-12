@@ -1,9 +1,11 @@
 import type { ReactNode, RefObject } from "react";
-import { Loader2, Square, SquareCheck } from "lucide-react";
+import { FolderOpen, Loader2, Square, SquareCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { SyncDots } from "../../components/SyncDots";
 import { SkillCardShell } from "../../components/ui/SkillCardShell";
-import type { ManagedSkill, ToolInfo } from "../../lib/tauri";
+import type { ManagedSkill, SkillUsageStat, ToolInfo } from "../../lib/tauri";
+import * as api from "../../lib/tauri";
 import { cn } from "../../utils";
 import { SkillCardActions } from "./SkillCardActions";
 import { SkillGridHoverActions } from "./SkillGridHoverActions";
@@ -39,6 +41,7 @@ interface SkillGridCardProps {
   sourceLabel: string;
   tools: ToolInfo[];
   pendingToolKey: string | null;
+  usage?: SkillUsageStat;
   onClick: () => void;
   onTagInputChange: (value: string) => void;
   onAddTag: (skill: ManagedSkill, value?: string) => void;
@@ -79,6 +82,7 @@ export function SkillGridCard({
   sourceLabel,
   tools,
   pendingToolKey,
+  usage,
   onClick,
   onTagInputChange,
   onAddTag,
@@ -94,6 +98,33 @@ export function SkillGridCard({
   onToggleSkillTarget,
 }: SkillGridCardProps) {
   const { t } = useTranslation();
+  const usageTitle = usage
+    ? [
+        t("mySkills.usage.count", { count: usage.count }),
+        usage.last_used_at ? t("mySkills.usage.lastUsed", { time: new Date(usage.last_used_at).toLocaleString() }) : null,
+        usage.agents.length > 0 ? usage.agents.join(", ") : null,
+      ].filter(Boolean).join(" · ")
+    : "";
+
+  const handleSourceClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.openSkillSource(skill.id);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("mySkills.sourceOpenFailed", { message }));
+    }
+  };
+
+  const handleLocalCopyClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.openSkillLocalCopy(skill.id);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("mySkills.sourceOpenFailed", { message }));
+    }
+  };
 
   return (
     <SkillCardShell
@@ -128,7 +159,12 @@ export function SkillGridCard({
             : <Square className="h-3.5 w-3.5 shrink-0 text-faint" />
         )}
         <h3
-          className="flex-1 truncate text-[14px] font-semibold text-primary group-hover:text-accent-light"
+          className={cn(
+            "flex-1 truncate text-[14px] font-semibold group-hover:text-accent-light",
+            isMissingLocalSource
+              ? "text-muted line-through decoration-border-subtle"
+              : "text-primary"
+          )}
           title={displayName}
         >
           {displayName}
@@ -136,7 +172,10 @@ export function SkillGridCard({
       </div>
 
       <div className="px-3.5 pb-3">
-        <p className="text-[13px] leading-[18px] text-muted truncate">
+        <p className={cn(
+          "text-[13px] leading-[18px] truncate",
+          isMissingLocalSource ? "text-faint line-through decoration-border-subtle/50" : "text-muted"
+        )}>
           {skill.description || "—"}
         </p>
         {badge && (
@@ -186,15 +225,50 @@ export function SkillGridCard({
 
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle px-3.5 py-2.5">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="inline-flex shrink-0 items-center gap-1 text-[13px] text-muted">
-            {sourceIcon}
-            {sourceLabel}
-          </span>
+          {skill.source_type === "local" ? (
+            <button
+              onClick={handleLocalCopyClick}
+              className="inline-flex shrink-0 items-center justify-center rounded-control p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+              title={t("mySkills.sourceOpenDir")}
+            >
+              <FolderOpen className="h-3 w-3" />
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleLocalCopyClick}
+                className="inline-flex shrink-0 items-center justify-center rounded-control p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+                title={t("mySkills.sourceOpenDir")}
+              >
+                <FolderOpen className="h-3 w-3" />
+              </button>
+              <span className="text-faint">|</span>
+              <button
+                onClick={handleSourceClick}
+                className="inline-flex shrink-0 items-center gap-1 text-[13px] text-muted transition-colors hover:text-secondary"
+                title={skill.source_ref || skill.source_ref_resolved ? t("mySkills.sourceOpenUrl") : undefined}
+              >
+                {sourceIcon}
+                {sourceLabel}
+              </button>
+            </>
+          )}
           {active && (
             <>
               <span className="text-faint">·</span>
               <span className="truncate text-[13px] font-medium text-amber-600 dark:text-amber-400/80">
                 {viewedPresetName}
+              </span>
+            </>
+          )}
+          {usage && usage.count > 0 && (
+            <>
+              <span className="text-faint">·</span>
+              <span
+                className="shrink-0 text-[13px] font-medium text-accent-light"
+                title={usageTitle}
+              >
+                {t("mySkills.usage.short", { count: usage.count })}
               </span>
             </>
           )}
