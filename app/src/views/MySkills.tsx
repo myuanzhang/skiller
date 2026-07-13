@@ -1225,7 +1225,7 @@ export function MySkills() {
           onFilterModeChange={setFilterMode}
         />
 
-        <div className="app-segmented">
+        <div className="flex items-center gap-2">
           {(() => {
             const mode = getGitToolbarMode();
             return (
@@ -1250,7 +1250,7 @@ export function MySkills() {
             variant="ghost"
             onClick={handleCheckAllUpdates}
             disabled={checkingAll}
-            className="ml-2 mr-2 border-l border-border-subtle pl-4 pr-3 py-2"
+            className="border-l border-border-subtle pl-3 pr-3 py-2"
             icon={<RefreshCw className={cn("h-3.5 w-3.5", checkingAll && "animate-spin")} />}
           >
             {t("mySkills.updateActions.checkAll")}
@@ -1259,39 +1259,48 @@ export function MySkills() {
             variant="ghost"
             onClick={handleUpdateAvailableSkills}
             disabled={batchUpdating || availableUpdateCount === 0}
-            className="mr-2 px-3 py-2 text-accent-light hover:bg-accent-bg hover:text-accent-light"
+            className={cn(
+              "px-3 py-2",
+              availableUpdateCount > 0
+                ? "text-accent-light hover:bg-accent-bg hover:text-accent-light"
+                : "text-faint"
+            )}
             icon={<RotateCcw className={cn("h-3.5 w-3.5", batchUpdating && "animate-spin")} />}
           >
             {t("mySkills.updateActions.updateAvailable", { count: availableUpdateCount })}
           </Button>
-          <button
-            onClick={() => setViewMode("grid")}
-            className={cn(
-              "rounded-md p-2 transition-colors outline-none",
-              viewMode === "grid" ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
-            )}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setViewMode("list")}
-            className={cn(
-              "rounded-md p-2 transition-colors outline-none",
-              viewMode === "list" ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
-            )}
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => isMultiSelect ? exitMultiSelect() : setIsMultiSelect(true)}
-            className={cn(
-              "rounded-md p-2 transition-colors outline-none",
-              isMultiSelect ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
-            )}
-            title={isMultiSelect ? t("mySkills.cancelSelect") : t("mySkills.selectMode")}
-          >
-            <SquareCheck className="h-4 w-4" />
-          </button>
+
+          <div className="app-segmented ml-1">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "app-segmented-button px-2",
+                viewMode === "grid" && "app-segmented-button-active"
+              )}
+              title={t("mySkills.filters.all")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "app-segmented-button px-2",
+                viewMode === "list" && "app-segmented-button-active"
+              )}
+            >
+              <List className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => isMultiSelect ? exitMultiSelect() : setIsMultiSelect(true)}
+              className={cn(
+                "app-segmented-button px-2",
+                isMultiSelect && "app-segmented-button-active"
+              )}
+              title={isMultiSelect ? t("mySkills.cancelSelect") : t("mySkills.selectMode")}
+            >
+              <SquareCheck className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 

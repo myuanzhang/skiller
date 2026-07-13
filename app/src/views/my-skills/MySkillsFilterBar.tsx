@@ -30,7 +30,7 @@ export function MySkillsFilterBar({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap items-center gap-1 px-1 -mt-2 -mb-3">
+    <div className="flex flex-wrap items-center gap-1.5 px-1 -mt-1">
       {(["local", "git", "skillssh"] as const).map((src) => (
         <button
           key={src}
@@ -39,7 +39,7 @@ export function MySkillsFilterBar({
             "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
             sourceFilters.has(src)
               ? "bg-accent text-white dark:bg-accent dark:text-white"
-              : "bg-surface-hover text-muted hover:text-secondary"
+              : "border border-border-subtle bg-surface-hover text-muted hover:text-secondary hover:border-border"
           )}
         >
           {t(`mySkills.sourceFilter.${src}`)}

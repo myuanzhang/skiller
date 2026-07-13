@@ -102,8 +102,8 @@ export function SyncDots({
   const hiddenCount = orderedDots.length - visible.length;
 
   const dim = size === "sm"
-    ? "h-[16px] w-[16px] text-[8px]"
-    : "h-[18px] w-[18px] text-[9px]";
+    ? "h-[18px] w-[18px] text-[8px]"
+    : "h-[20px] w-[20px] text-[9px]";
 
   const stateTitle: Record<DotState, string> = {
     synced: ` · ${t("mySkills.targetSynced")}`,
@@ -147,7 +147,7 @@ export function SyncDots({
   };
 
   return (
-    <div className={cn("flex items-center gap-[2px]", className)}>
+    <div className={cn("flex items-center gap-1", className)}>
       {visible.map((dot) => {
         const useIcon = hasAgentIcon(dot.key);
         const isPending = pendingKey === dot.key;

@@ -19,7 +19,10 @@ export type AgentDotState = "synced" | "available" | "orphan";
 
 export const agentDotIconClass: Record<AgentDotState, string> = {
   synced: "ring-1 ring-inset ring-accent/60 bg-accent/10 shadow-[0_0_0_1px_rgba(255,255,255,0.35)]",
-  available: "bg-surface opacity-25 grayscale contrast-75",
+  // Inactive agents: dimmed but NOT grayscaled — a row of gray blocks reads as
+  // dirt on the card. Keep the icon faintly visible so the row still says
+  // "available to sync" without becoming visual noise.
+  available: "bg-surface opacity-45",
   // Orphan uses amber-500 alpha directly: our --color-warning token is a solid
   // hex, so Tailwind alpha modifiers (ring-warning/60) compile to nothing.
   orphan: "ring-1 ring-inset ring-amber-500/60 bg-amber-500/10",

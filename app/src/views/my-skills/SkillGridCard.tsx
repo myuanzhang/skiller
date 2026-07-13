@@ -173,7 +173,7 @@ export function SkillGridCard({
 
       <div className="px-3.5 pb-3">
         <p className={cn(
-          "text-[13px] leading-[18px] truncate",
+          "min-h-[36px] text-[13px] leading-[18px] line-clamp-2",
           isMissingLocalSource ? "text-faint line-through decoration-border-subtle/50" : "text-muted"
         )}>
           {skill.description || "—"}
