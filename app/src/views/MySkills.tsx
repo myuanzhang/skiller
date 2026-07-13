@@ -1208,12 +1208,22 @@ export function MySkills() {
   return (
     <div className="app-page">
       <div className="app-page-header pr-2 pb-1 flex items-center justify-between gap-3">
-        <h1 className="app-page-title flex items-center gap-2">
-          {t("mySkills.title")}
-          <span className="app-badge">
-            {skills.length}
-          </span>
-        </h1>
+        <div className="min-w-0">
+          <h1 className="app-page-title flex items-center gap-2">
+            {t("mySkills.title")}
+            <span className="rounded-full bg-surface-hover px-2 py-0.5 text-[12px] font-medium tabular-nums text-muted">
+              {skills.length}
+            </span>
+          </h1>
+          <p className="app-page-subtitle">
+            {t("mySkills.subtitle", {
+              count: viewedPreset
+                ? skills.filter((s) => s.preset_ids.includes(viewedPreset.id)).length
+                : 0,
+              preset: viewedPresetName,
+            })}
+          </p>
+        </div>
 
       </div>
 

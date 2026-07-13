@@ -76,7 +76,9 @@ export function MySkillsFilterBar({
                 title={t("mySkills.tags.manageHint")}
                 className={cn(
                   "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
-                  isActive ? getTagActiveColor(tag, allTags) : getTagColor(tag, allTags)
+                  isActive
+                    ? cn("ring-1 ring-inset ring-black/10 dark:ring-white/15", getTagActiveColor(tag, allTags))
+                    : getTagColor(tag, allTags)
                 )}
               >
                 {tag}
