@@ -50,7 +50,7 @@ export function SkillPickerRow({
       className={cn(
         "flex items-center gap-3 px-5 py-2.5 transition-colors",
         selectable && "cursor-pointer hover:bg-surface-hover",
-        selectable && selected && "bg-accent-bg/40",
+        selectable && selected && "bg-accent/10",
         !selectable && "opacity-60",
       )}
     >

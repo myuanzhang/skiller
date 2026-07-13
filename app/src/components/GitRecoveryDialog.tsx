@@ -74,7 +74,7 @@ export function GitRecoveryDialog({ open, reason, onClose, onReclone }: Props) {
             disabled={!!loading}
             className={cn(
               "w-full text-left rounded-md border border-accent bg-accent-bg px-3 py-3 transition-colors outline-none",
-              "disabled:cursor-not-allowed disabled:opacity-60 hover:bg-accent-bg/80"
+              "disabled:cursor-not-allowed disabled:opacity-60 hover:bg-accent/15"
             )}
           >
             <div className="flex items-center gap-2">

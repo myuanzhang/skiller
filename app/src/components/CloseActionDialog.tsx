@@ -56,7 +56,7 @@ export function CloseActionDialog({ open, onCancel, onClose, onHide }: Props) {
             type="checkbox"
             checked={remember}
             onChange={(e) => setRemember(e.target.checked)}
-            className="w-3.5 h-3.5 accent-[var(--color-accent)]"
+            className="w-3.5 h-3.5 accent-[rgb(var(--color-accent))]"
           />
           <span className="text-[13px] text-muted">{t("closeAction.remember")}</span>
         </label>

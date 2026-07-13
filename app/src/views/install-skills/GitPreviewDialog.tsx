@@ -70,7 +70,7 @@ export function GitPreviewDialog({
                 className={cn(
                   "flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors",
                   item.selected
-                    ? "border-accent-border bg-accent-bg/40"
+                    ? "border-accent-border bg-accent/10"
                     : "border-border-subtle bg-background opacity-50"
                 )}
               >

@@ -37,9 +37,9 @@ function ThemedToaster() {
       position="bottom-right"
       toastOptions={{
         style: {
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          color: "var(--color-text-primary)",
+          background: "rgb(var(--color-surface))",
+          border: "1px solid rgb(var(--color-border))",
+          color: "rgb(var(--color-text-primary))",
         },
       }}
     />

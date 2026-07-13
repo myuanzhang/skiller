@@ -918,7 +918,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               // high-contrast highlight instead of reusing the status color.
               const activeClass =
                 status === "project_only"
-                  ? "bg-[var(--color-text-primary)] text-[var(--color-bg)]"
+                  ? "bg-[rgb(var(--color-text-primary))] text-[rgb(var(--color-bg))]"
                   : meta.className;
               return (
                 <button

@@ -238,7 +238,7 @@ export function AddProjectDialog({ open, onClose, onAdded }: Props) {
                       className={cn(
                         "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-[13px] transition-all outline-none",
                         selected.has(path)
-                          ? "bg-accent-bg/50 text-primary border border-accent-border/30"
+                          ? "bg-accent/10 text-primary border border-accent/30"
                           : "bg-background text-tertiary border border-border-subtle hover:border-border"
                       )}
                     >

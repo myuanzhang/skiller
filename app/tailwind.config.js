@@ -8,47 +8,48 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: 'var(--color-bg)',
-        'bg-secondary': 'var(--color-bg-secondary)',
-        surface: 'var(--color-surface)',
-        'surface-hover': 'var(--color-surface-hover)',
-        'surface-active': 'var(--color-surface-active)',
-        border: 'var(--color-border)',
-        'border-subtle': 'var(--color-border-subtle)',
+        background: 'rgb(var(--color-bg) / <alpha-value>)',
+        'bg-secondary': 'rgb(var(--color-bg-secondary) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        'surface-hover': 'rgb(var(--color-surface-hover) / <alpha-value>)',
+        'surface-active': 'rgb(var(--color-surface-active) / <alpha-value>)',
+        border: 'rgb(var(--color-border) / <alpha-value>)',
+        'border-subtle': 'rgb(var(--color-border-subtle) / <alpha-value>)',
         accent: {
-          DEFAULT: 'var(--color-accent)',
-          hover: 'var(--color-accent-hover)',
-          light: 'var(--color-accent-light)',
-          dark: 'var(--color-accent-dark)',
+          DEFAULT: 'rgb(var(--color-accent) / <alpha-value>)',
+          hover: 'rgb(var(--color-accent-hover) / <alpha-value>)',
+          light: 'rgb(var(--color-accent-light) / <alpha-value>)',
+          dark: 'rgb(var(--color-accent-dark) / <alpha-value>)',
+          // Pre-baked alpha tokens: consumed as-is, not via alpha modifiers.
           bg: 'var(--color-accent-bg)',
           border: 'var(--color-accent-border)',
         },
         danger: {
-          DEFAULT: 'var(--color-danger)',
+          DEFAULT: 'rgb(var(--color-danger) / <alpha-value>)',
           bg: 'var(--color-danger-bg)',
         },
         warning: {
-          DEFAULT: 'var(--color-warning)',
+          DEFAULT: 'rgb(var(--color-warning) / <alpha-value>)',
           bg: 'var(--color-warning-bg)',
           border: 'var(--color-warning-border)',
         },
         success: {
-          DEFAULT: 'var(--color-success)',
+          DEFAULT: 'rgb(var(--color-success) / <alpha-value>)',
           bg: 'var(--color-success-bg)',
           border: 'var(--color-success-border)',
         },
         info: {
-          DEFAULT: 'var(--color-info)',
+          DEFAULT: 'rgb(var(--color-info) / <alpha-value>)',
           bg: 'var(--color-info-bg)',
           border: 'var(--color-info-border)',
         },
       },
       textColor: {
-        primary: 'var(--color-text-primary)',
-        secondary: 'var(--color-text-secondary)',
-        tertiary: 'var(--color-text-tertiary)',
-        muted: 'var(--color-text-muted)',
-        faint: 'var(--color-text-faint)',
+        primary: 'rgb(var(--color-text-primary) / <alpha-value>)',
+        secondary: 'rgb(var(--color-text-secondary) / <alpha-value>)',
+        tertiary: 'rgb(var(--color-text-tertiary) / <alpha-value>)',
+        muted: 'rgb(var(--color-text-muted) / <alpha-value>)',
+        faint: 'rgb(var(--color-text-faint) / <alpha-value>)',
       },
       fontFamily: {
         sans: [

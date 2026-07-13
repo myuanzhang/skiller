@@ -171,9 +171,9 @@ function cellTone(type: DiffRow["type"], side: "left" | "right") {
   }
   return {
     lineNoClass: "text-faint",
-    lineNoStyle: { backgroundColor: "var(--color-surface-hover)" },
+    lineNoStyle: { backgroundColor: "rgb(var(--color-surface-hover))" },
     codeClass: "text-secondary",
-    codeStyle: { backgroundColor: "var(--color-bg-secondary)" },
+    codeStyle: { backgroundColor: "rgb(var(--color-bg-secondary))" },
     markerClass: "text-faint",
   };
 }

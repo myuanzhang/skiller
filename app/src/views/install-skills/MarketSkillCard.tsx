@@ -67,7 +67,7 @@ export function MarketSkillCard({
                 "mt-2 inline-flex max-w-full rounded-control border border-accent-border bg-accent-bg px-1.5 py-0.5 text-[12px] leading-4 font-medium text-accent-light transition-colors",
                 marketSourceFilter === skill.source
                   ? "cursor-default opacity-90"
-                  : "hover:bg-accent-bg/80"
+                  : "hover:bg-accent/15"
               )}
             >
               <span className="truncate">@{skill.source}</span>

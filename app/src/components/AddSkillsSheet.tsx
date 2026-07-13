@@ -293,7 +293,7 @@ function AddSkillsSheetBody({ onClose, target, managedSkills, onInstalled }: Pro
             displayName={agent.display_name}
             className={cn(
               dim,
-              "rounded-control border border-bg-secondary bg-surface shadow-[0_0_0_1px_var(--color-border-subtle)]",
+              "rounded-control border border-bg-secondary bg-surface shadow-[0_0_0_1px_rgb(var(--color-border-subtle))]",
             )}
           />
         ))}
@@ -301,7 +301,7 @@ function AddSkillsSheetBody({ onClose, target, managedSkills, onInstalled }: Pro
           <span
             className={cn(
               dim,
-              "inline-flex items-center justify-center rounded-control border border-bg-secondary bg-surface text-[10px] font-semibold text-muted shadow-[0_0_0_1px_var(--color-border-subtle)]",
+              "inline-flex items-center justify-center rounded-control border border-bg-secondary bg-surface text-[10px] font-semibold text-muted shadow-[0_0_0_1px_rgb(var(--color-border-subtle))]",
             )}
             title={`+${hiddenCount}`}
           >
