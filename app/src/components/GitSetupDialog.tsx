@@ -41,7 +41,7 @@ export function GitSetupDialog({ open, hasRemote, onClose, onClone, onInit }: Pr
       open={open}
       onClose={onClose}
       closeOnBackdrop={!loading}
-      contentClassName="bg-surface border border-border rounded-xl w-full max-w-lg p-5 shadow-2xl"
+      contentClassName="bg-surface border border-border rounded-panel w-full max-w-lg p-5 shadow-2xl"
     >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>

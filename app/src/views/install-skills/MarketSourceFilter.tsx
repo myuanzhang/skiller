@@ -138,7 +138,7 @@ export function MarketSourceFilter({
                     ref={sourceOverflowPanelRef}
                     role="listbox"
                     className={cn(
-                      "absolute top-full z-50 mt-1.5 w-48 overflow-hidden rounded-xl border border-border bg-surface shadow-lg",
+                      "absolute top-full z-50 mt-1.5 w-48 overflow-hidden rounded-panel border border-border bg-surface shadow-lg",
                       sourceOverflowSide === "left" ? "left-0" : "right-0"
                     )}
                   >

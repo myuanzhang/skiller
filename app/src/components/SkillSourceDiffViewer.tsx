@@ -19,7 +19,7 @@ export function SkillSourceDiffViewer({ entries, className }: Props) {
 
   if (entries.length === 0) {
     return (
-      <div className={cn("rounded-xl border border-border-subtle bg-bg-secondary px-4 py-6 text-center", className)}>
+      <div className={cn("rounded-panel border border-border-subtle bg-bg-secondary px-4 py-6 text-center", className)}>
         <div className="text-[13px] font-medium text-secondary">{t("mySkills.sourceDiff.noChanges")}</div>
       </div>
     );
@@ -28,7 +28,7 @@ export function SkillSourceDiffViewer({ entries, className }: Props) {
   return (
     <div className={cn("space-y-4", className)}>
       {entries.map((entry) => (
-        <div key={entry.relative_path} className="overflow-hidden rounded-xl border border-border-subtle">
+        <div key={entry.relative_path} className="overflow-hidden rounded-panel border border-border-subtle">
           <div className="flex flex-wrap items-center gap-2 border-b border-border-subtle bg-surface px-3 py-2">
             <span
               className={cn(

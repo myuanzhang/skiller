@@ -246,7 +246,7 @@ function SkillDetailPanelContent({
         </span>
       </div>
       {metadataItems.length > 0 && (
-        <div className="mt-4 rounded-xl border border-border-subtle bg-surface/70">
+        <div className="mt-4 rounded-panel border border-border-subtle bg-surface/70">
           <button
             type="button"
             onClick={() => setIsMetadataExpanded((prev) => !prev)}
@@ -311,7 +311,7 @@ function SkillDetailPanelContent({
       backLabel={t("common.back")}
     >
       {tools && onToggleTarget && availableTools.length > 0 && (
-        <div className="mb-4 rounded-xl border border-border-subtle">
+        <div className="mb-4 rounded-panel border border-border-subtle">
           <div className="border-b border-border-subtle px-5 py-3">
             <div className="flex items-center justify-between gap-2 text-[13px]">
               <div className="flex min-w-0 items-center gap-2">

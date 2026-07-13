@@ -104,14 +104,14 @@ export function SkillMarkdown({ content, className }: SkillMarkdownProps) {
           pre: ({ className, ...props }) => (
             <pre
               className={cn(
-                "mb-4 overflow-x-auto rounded-xl border border-border-subtle bg-background px-4 py-3",
+                "mb-4 overflow-x-auto rounded-panel border border-border-subtle bg-background px-4 py-3",
                 className
               )}
               {...props}
             />
           ),
           table: ({ className, ...props }) => (
-            <div className="mb-4 overflow-x-auto rounded-xl border border-border-subtle">
+            <div className="mb-4 overflow-x-auto rounded-panel border border-border-subtle">
               <table className={cn("min-w-full border-collapse text-left text-[13px]", className)} {...props} />
             </div>
           ),

@@ -26,7 +26,7 @@ export function HelpDialog() {
             <button
               type="button"
               onClick={closeHelp}
-              className="rounded-xl border border-border bg-background p-2 text-muted transition hover:border-border-subtle hover:text-secondary"
+              className="rounded-panel border border-border bg-background p-2 text-muted transition hover:border-border-subtle hover:text-secondary"
             >
               <X className="h-4 w-4" />
             </button>

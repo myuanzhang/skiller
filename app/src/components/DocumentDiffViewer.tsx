@@ -219,7 +219,7 @@ export function DocumentDiffViewer({ original, updated, className }: DocumentDif
 
   if (hunks.length === 0) {
     return (
-      <div className={cn("rounded-xl border border-border-subtle bg-bg-secondary px-4 py-6 text-center", className)}>
+      <div className={cn("rounded-panel border border-border-subtle bg-bg-secondary px-4 py-6 text-center", className)}>
         <div className="text-[13px] font-medium text-secondary">No content changes</div>
       </div>
     );
@@ -228,7 +228,7 @@ export function DocumentDiffViewer({ original, updated, className }: DocumentDif
   return (
     <div className={cn("space-y-4", className)}>
       {hunks.map((hunk) => (
-        <div key={hunk.id} className="overflow-hidden rounded-xl border border-border-subtle bg-bg-secondary">
+        <div key={hunk.id} className="overflow-hidden rounded-panel border border-border-subtle bg-bg-secondary">
           <div className="grid grid-cols-2 border-b border-border-subtle" style={{ backgroundColor: "#ddf4ff" }}>
             <div className="border-r border-border-subtle px-3 py-2 font-mono text-[11px] text-sky-800">
               @@ -{hunk.leftStart},{hunk.leftCount}

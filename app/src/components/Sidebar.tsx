@@ -46,15 +46,15 @@ import { getPresetIconOption } from "../lib/presetIcons";
 
 function getSyncHealthIndicator(health: SyncHealth, skillCount: number): { color: string; title: string } | null {
   if (skillCount === 0) return null;
-  if (health.diverged > 0) return { color: "bg-red-400", title: `${health.diverged} diverged` };
+  if (health.diverged > 0) return { color: "bg-danger", title: `${health.diverged} diverged` };
   if (health.project_newer > 0 || health.center_newer > 0) {
     const parts: string[] = [];
     if (health.project_newer > 0) parts.push(`${health.project_newer} project newer`);
     if (health.center_newer > 0) parts.push(`${health.center_newer} center newer`);
-    return { color: "bg-amber-400", title: parts.join(", ") };
+    return { color: "bg-warning", title: parts.join(", ") };
   }
-  if (health.project_only > 0) return { color: "bg-blue-400", title: `${health.project_only} project only` };
-  if (health.in_sync === skillCount) return { color: "bg-emerald-400", title: "All in sync" };
+  if (health.project_only > 0) return { color: "bg-info", title: `${health.project_only} project only` };
+  if (health.in_sync === skillCount) return { color: "bg-success", title: "All in sync" };
   return null;
 }
 
@@ -427,7 +427,7 @@ export function Sidebar() {
           <img
             src="/icons/32x32.png"
             alt="logo"
-            className="w-[24px] h-[24px] shrink-0"
+            className="w-[24px] h-[24px] shrink-0 rounded outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
           />
           <span className="text-[16px] font-semibold text-secondary tracking-tight truncate leading-[22px]">
             {t("app.name")}

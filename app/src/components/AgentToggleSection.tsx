@@ -34,7 +34,7 @@ export function AgentToggleSection({
   const enabledAvailableCount = availableItems.filter((item) => item.enabled).length;
 
   return (
-    <div className={cn("rounded-xl border border-border-subtle", className)}>
+    <div className={cn("rounded-panel border border-border-subtle", className)}>
       <div className="border-b border-border-subtle px-6 py-2.5">
         <div className="flex items-center justify-between gap-2 text-[13px]">
           <div className="flex min-w-0 items-center gap-2">

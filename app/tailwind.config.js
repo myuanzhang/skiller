@@ -27,6 +27,21 @@ export default {
           DEFAULT: 'var(--color-danger)',
           bg: 'var(--color-danger-bg)',
         },
+        warning: {
+          DEFAULT: 'var(--color-warning)',
+          bg: 'var(--color-warning-bg)',
+          border: 'var(--color-warning-border)',
+        },
+        success: {
+          DEFAULT: 'var(--color-success)',
+          bg: 'var(--color-success-bg)',
+          border: 'var(--color-success-border)',
+        },
+        info: {
+          DEFAULT: 'var(--color-info)',
+          bg: 'var(--color-info-bg)',
+          border: 'var(--color-info-border)',
+        },
       },
       textColor: {
         primary: 'var(--color-text-primary)',
@@ -69,6 +84,8 @@ export default {
         card: 'var(--shadow-card)',
         popover: 'var(--shadow-popover)',
         modal: 'var(--shadow-modal)',
+        border: 'var(--shadow-border)',
+        'border-hover': 'var(--shadow-border-hover)',
       },
     },
   },

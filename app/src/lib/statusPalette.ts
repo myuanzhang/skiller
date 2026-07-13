@@ -6,9 +6,11 @@ export type SyncStatusTone =
   | "project_only";
 
 export const syncStatusClass: Record<SyncStatusTone, string> = {
-  in_sync: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  project_newer: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  center_newer: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  in_sync: "bg-success-bg text-success",
+  project_newer: "bg-warning-bg text-warning",
+  center_newer: "bg-info-bg text-info",
+  // Diverged keeps its distinct violet — no semantic token maps to it, and it
+  // must stay visually separate from the danger/warning states above.
   diverged: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
   project_only: "bg-surface-hover text-muted",
 };
@@ -18,6 +20,8 @@ export type AgentDotState = "synced" | "available" | "orphan";
 export const agentDotIconClass: Record<AgentDotState, string> = {
   synced: "ring-1 ring-inset ring-accent/60 bg-accent/10 shadow-[0_0_0_1px_rgba(255,255,255,0.35)]",
   available: "bg-surface opacity-25 grayscale contrast-75",
+  // Orphan uses amber-500 alpha directly: our --color-warning token is a solid
+  // hex, so Tailwind alpha modifiers (ring-warning/60) compile to nothing.
   orphan: "ring-1 ring-inset ring-amber-500/60 bg-amber-500/10",
 };
 

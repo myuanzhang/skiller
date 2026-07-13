@@ -33,10 +33,10 @@ export function Modal({
   return (
     <div className={cn("fixed inset-0 flex items-center justify-center", zIndexClassName, className)}>
       <div
-        className={cn("absolute inset-0 bg-black/70 backdrop-blur-sm", overlayClassName)}
+        className={cn("absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in", overlayClassName)}
         onClick={handleBackdropClick}
       />
-      <div className={cn("relative", contentClassName)}>{children}</div>
+      <div className={cn("relative animate-in fade-in slide-in-bottom", contentClassName)}>{children}</div>
     </div>
   );
 }

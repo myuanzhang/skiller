@@ -6,8 +6,11 @@ type Size = "sm" | "md";
 
 const base =
   "inline-flex items-center justify-center gap-1.5 rounded-md font-medium " +
-  "transition-colors outline-none active:scale-[0.98] disabled:cursor-not-allowed " +
-  "disabled:opacity-50 disabled:active:scale-100";
+  "transition-[background-color,border-color,color,box-shadow,scale] duration-150 ease-out " +
+  "outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 " +
+  "focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50";
+
+const tapScale = "enabled:active:scale-[0.96]";
 
 const variantClass: Record<Variant, string> = {
   primary: "bg-accent text-white hover:bg-accent-hover",
@@ -27,6 +30,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
   /** Leading icon element, rendered before children. */
   icon?: ReactNode;
+  /** Disable the scale-on-press effect when motion would be distracting. */
+  static?: boolean;
 }
 
 /**
@@ -38,6 +43,7 @@ export function Button({
   variant = "primary",
   size = "md",
   icon,
+  static: isStatic = false,
   className,
   children,
   type = "button",
@@ -46,7 +52,13 @@ export function Button({
   return (
     <button
       type={type}
-      className={cn(base, variantClass[variant], sizeClass[size], className)}
+      className={cn(
+        base,
+        !isStatic && tapScale,
+        variantClass[variant],
+        sizeClass[size],
+        className
+      )}
       {...rest}
     >
       {icon}

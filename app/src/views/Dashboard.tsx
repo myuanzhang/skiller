@@ -50,8 +50,8 @@ export function Dashboard() {
   const healthy = divergedCount === 0;
   const healthLabel = healthy ? t("dashboard.synced") : t("project.syncStatus.diverged");
   const healthClass = healthy
-    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-    : "bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    ? "bg-success-bg text-success"
+    : "bg-warning-bg text-warning";
 
   const metricCards = [
     {
@@ -66,7 +66,7 @@ export function Dashboard() {
       value: String(enabledAgents.length),
       detail: t("sidebar.globalWorkspace"),
       icon: Bot,
-      tone: "text-sky-600 bg-sky-500/10 dark:text-sky-300",
+      tone: "text-info bg-info-bg",
     },
     {
       title: t("sidebar.projects"),
@@ -74,13 +74,13 @@ export function Dashboard() {
       detail: divergedCount > 0 ? `${divergedCount} ${t("project.syncStatus.diverged")}` : t("dashboard.synced"),
       icon: GitBranch,
       tone: divergedCount > 0
-        ? "text-amber-600 bg-amber-500/10 dark:text-amber-300"
-        : "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
+        ? "text-warning bg-warning-bg"
+        : "text-success bg-success-bg",
     },
   ];
 
   return (
-    <div className="app-page app-page-narrow">
+    <div className="app-page app-page-narrow stagger">
       <div className="app-page-header flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="app-page-title">{t("dashboard.greeting")}</h1>
@@ -103,7 +103,7 @@ export function Dashboard() {
             <div>
               <p className="app-section-title mb-2">{t("dashboard.syncCoverage")}</p>
               <div className="flex items-end gap-2">
-                <span className="text-[32px] font-semibold leading-none text-primary tabular-nums">
+                <span className="text-[32px] font-semibold leading-none tracking-[-0.02em] text-primary tabular-nums">
                   {coverageLabel}
                 </span>
                 <span className="pb-1 text-[13px] text-muted">{t("dashboard.synced")}</span>
@@ -154,8 +154,8 @@ export function Dashboard() {
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-lg border",
                 healthy
-                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
-                  : "border-amber-500/20 bg-amber-500/10 text-amber-500"
+                  ? "border-success-border bg-success-bg text-success"
+                  : "border-warning-border bg-warning-bg text-warning"
               )}
             >
               {healthy ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}

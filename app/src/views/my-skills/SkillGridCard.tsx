@@ -147,7 +147,7 @@ export function SkillGridCard({
         onDeleteSkill={onDeleteSkill}
       />
       {deleting && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-surface/70 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-panel bg-surface/70 backdrop-blur-[1px]">
           <Loader2 className="h-5 w-5 animate-spin text-muted" />
         </div>
       )}

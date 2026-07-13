@@ -24,8 +24,8 @@ export function SkillCardShell({
     <div
       className={cn(
         viewMode === "grid"
-          ? "app-panel group relative flex h-full cursor-pointer flex-col overflow-hidden transition-all hover:border-border hover:bg-surface-hover"
-          : "app-panel group relative flex cursor-pointer items-center gap-3.5 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
+          ? "app-panel group relative flex h-full cursor-pointer flex-col overflow-hidden transition-[box-shadow,background-color] duration-150 ease-out hover:bg-surface-hover hover:shadow-border-hover active:scale-[0.99]"
+          : "app-panel group relative flex cursor-pointer items-center gap-3.5 rounded-panel px-3.5 py-3 transition-[box-shadow,background-color] duration-150 ease-out hover:bg-surface-hover hover:shadow-border-hover active:scale-[0.99]",
         active && "border-l-2 border-l-accent",
         selected && "ring-1 ring-accent border-accent/40",
         disabled && "opacity-60",

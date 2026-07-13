@@ -27,7 +27,7 @@ export function GitPreviewDialog({
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-2xl">
+      <div className="relative w-full max-w-md rounded-panel border border-border bg-surface p-5 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[14px] font-semibold text-primary">{t("install.gitPreview.title")}</h2>
           <button

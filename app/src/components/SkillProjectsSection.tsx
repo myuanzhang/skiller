@@ -197,7 +197,7 @@ export function SkillProjectsSection({ skill, projects, onChanged }: Props) {
   const visibleProjects = expanded ? projects : projects.slice(0, 4);
 
   return (
-    <div className="mb-4 rounded-xl border border-border-subtle">
+    <div className="mb-4 rounded-panel border border-border-subtle">
       <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-5 py-3 text-[13px]">
         <div className="flex min-w-0 items-center gap-2">
           <span className="font-medium text-secondary">

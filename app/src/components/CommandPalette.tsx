@@ -308,7 +308,7 @@ export function CommandPalette() {
       <div
         role="dialog"
         aria-label="Command palette"
-        className="w-[min(640px,92vw)] overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-2xl"
+        className="w-[min(640px,92vw)] overflow-hidden rounded-panel border border-border-subtle bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >

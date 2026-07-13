@@ -43,7 +43,7 @@ export function ConfirmDialog({
     <Modal
       open={open}
       onClose={onClose}
-      contentClassName="bg-surface border border-border rounded-xl w-full max-w-sm p-5 shadow-2xl"
+      contentClassName="bg-surface border border-border rounded-panel w-full max-w-sm p-5 shadow-2xl"
     >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[13px] font-semibold text-primary flex items-center gap-2">
