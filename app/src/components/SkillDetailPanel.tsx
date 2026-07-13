@@ -11,11 +11,13 @@ import {
   Plus,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { cn } from "../utils";
 import {
   getSkillDocument,
   getSourceSkillDocument,
   getSkillSourceDiff,
+  openSkillLocalCopy,
   type ManagedSkill,
   type Project,
   type SkillDocument,
@@ -239,12 +241,28 @@ function SkillDetailPanelContent({
           ))}
         </div>
       )}
-      <div className={cn("flex min-w-0 items-center gap-2 text-[13px] text-muted", skill.tags.length > 0 && "mt-3")}>
-        <Folder className="h-3.5 w-3.5 shrink-0" />
-        <span className="font-mono truncate" title={skill.central_path}>
+      <button
+        type="button"
+        onClick={async (e) => {
+          e.stopPropagation();
+          try {
+            await openSkillLocalCopy(skill.id);
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            toast.error(t("mySkills.sourceOpenFailed", { message }));
+          }
+        }}
+        title={t("mySkills.sourceOpenDir")}
+        className={cn(
+          "group/path flex min-w-0 items-center gap-2 rounded-control -mx-1 px-1 py-0.5 text-[13px] text-muted transition-colors hover:bg-surface-hover hover:text-secondary",
+          skill.tags.length > 0 && "mt-3"
+        )}
+      >
+        <Folder className="h-3.5 w-3.5 shrink-0 transition-colors group-hover/path:text-accent" />
+        <span className="truncate font-mono" title={skill.central_path}>
           {skill.central_path}
         </span>
-      </div>
+      </button>
       {metadataItems.length > 0 && (
         <div className="mt-4 rounded-panel border border-border-subtle bg-surface/70">
           <button
