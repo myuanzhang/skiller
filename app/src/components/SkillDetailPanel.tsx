@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Loader2,
   Plus,
+  ExternalLink,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ import {
   getSourceSkillDocument,
   getSkillSourceDiff,
   openSkillLocalCopy,
+  openSkillSource,
   type ManagedSkill,
   type Project,
   type SkillDocument,
@@ -210,6 +212,27 @@ function SkillDetailPanelContent({
     { label: t("mySkills.sourceRevision"), value: skill.source_revision },
   ].filter((item) => Boolean(item.value));
 
+  // Git / skills.sh skills point at a remote URL — surface it as a clickable
+  // link so users can jump to the source. Local skills have no web source.
+  const isLinkSource = skill.source_type === "git" || skill.source_type === "skillssh";
+  const sourceUrl =
+    skill.source_ref_resolved && /^https?:\/\//i.test(skill.source_ref_resolved)
+      ? skill.source_ref_resolved
+      : skill.source_ref && /^https?:\/\//i.test(skill.source_ref)
+        ? skill.source_ref
+        : null;
+  const hasSourceLink = isLinkSource && !!sourceUrl;
+
+  const openSource = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await openSkillSource(skill.id);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("mySkills.sourceOpenFailed", { message }));
+    }
+  };
+
   const activeDoc = doc?.skill_id === skill.id ? doc : null;
   const activeSourceDoc = sourceDoc?.skill_id === skill.id ? sourceDoc : null;
   const activeSourceDiff = sourceDiff?.skill_id === skill.id ? sourceDiff : null;
@@ -265,51 +288,82 @@ function SkillDetailPanelContent({
       </button>
       {metadataItems.length > 0 && (
         <div className="mt-4 rounded-panel border border-border-subtle bg-surface/70">
-          <button
-            type="button"
-            onClick={() => setIsMetadataExpanded((prev) => !prev)}
-            aria-expanded={isMetadataExpanded}
-            aria-controls="skill-source-metadata"
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-secondary px-2 py-1 text-[12px] text-muted">
-                {sourceIcon(skill.source_type)}
-                {sourceTypeLabel(skill.source_type)}
+          <div className="flex w-full items-center gap-2 pr-3">
+            <button
+              type="button"
+              onClick={() => setIsMetadataExpanded((prev) => !prev)}
+              aria-expanded={isMetadataExpanded}
+              aria-controls="skill-source-metadata"
+              className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 text-left"
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-secondary px-2 py-1 text-[12px] text-muted">
+                  {sourceIcon(skill.source_type)}
+                  {sourceTypeLabel(skill.source_type)}
+                </span>
+                <span className="truncate text-[13px] font-medium text-secondary">
+                  {t("mySkills.sourceType")}
+                </span>
               </span>
-              <span className="truncate text-[13px] font-medium text-secondary">
-                {t("mySkills.sourceType")}
+              <span className="inline-flex shrink-0 items-center gap-1 text-[12px] text-muted">
+                <span>
+                  {isMetadataExpanded
+                    ? t("mySkills.collapseAgentToggles")
+                    : t("mySkills.expandAgentToggles")}
+                </span>
+                {isMetadataExpanded ? (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
               </span>
-            </span>
-            <span className="inline-flex shrink-0 items-center gap-1 text-[12px] text-muted">
-              <span>
-                {isMetadataExpanded
-                  ? t("mySkills.collapseAgentToggles")
-                  : t("mySkills.expandAgentToggles")}
-              </span>
-              {isMetadataExpanded ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </span>
-          </button>
+            </button>
+            {hasSourceLink && (
+              <button
+                type="button"
+                onClick={openSource}
+                title={sourceUrl ?? undefined}
+                className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border-subtle bg-surface px-2 py-1 text-[12px] font-medium text-accent transition-colors hover:bg-accent-bg"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                {t("mySkills.openSourceLink")}
+              </button>
+            )}
+          </div>
           {isMetadataExpanded && (
             <div id="skill-source-metadata" className="border-t border-border-subtle px-4 py-3">
               <div className="grid gap-2 md:grid-cols-2">
-                {metadataItems.map((item) => (
-                  <div key={item.label} className="min-w-0">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
-                      {item.label}
+                {metadataItems.map((item) => {
+                  const isUrl = typeof item.value === "string" && /^https?:\/\//i.test(item.value);
+                  const clickable = hasSourceLink && isUrl;
+                  return (
+                    <div key={item.label} className="min-w-0">
+                      <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+                        {item.label}
+                      </div>
+                      {clickable ? (
+                        <button
+                          type="button"
+                          onClick={openSource}
+                          title={item.value ?? undefined}
+                          className="mt-0.5 flex w-full min-w-0 items-center gap-1 text-left font-mono text-[12.5px] text-accent transition-colors hover:text-accent-hover"
+                        >
+                          <span className="truncate underline decoration-accent/30 underline-offset-2">
+                            {item.value}
+                          </span>
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                        </button>
+                      ) : (
+                        <div
+                          className="mt-0.5 truncate font-mono text-[12.5px] text-secondary"
+                          title={item.value ?? undefined}
+                        >
+                          {item.value}
+                        </div>
+                      )}
                     </div>
-                    <div
-                      className="mt-0.5 truncate font-mono text-[12.5px] text-secondary"
-                      title={item.value ?? undefined}
-                    >
-                      {item.value}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

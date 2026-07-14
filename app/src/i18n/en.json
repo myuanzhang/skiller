@@ -177,6 +177,7 @@
     "sourceOpenDir": "Click to open the Skills Center copy",
     "sourceOpenUrl": "Click to open source",
     "sourceOpenFailed": "Failed to open source: {{message}}",
+    "openSourceLink": "Open source",
     "detectBrokenSymlinks": "Detect Broken Links",
     "brokenSymlinksDetected": "Detected {{count}} broken symlink skills: {{names}}",
     "noBrokenSymlinks": "No broken symlinks found",
