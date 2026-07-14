@@ -360,6 +360,7 @@ mod tests {
             relative_skills_dir: String::new(),
             relative_detect_dir: String::new(),
             additional_scan_dirs: vec![],
+            readonly_scan_dirs: vec![],
             override_skills_dir: Some(tmp.path().to_string_lossy().to_string()),
             is_custom: true,
             recursive_scan: false,
@@ -389,6 +390,7 @@ mod tests {
             relative_skills_dir: String::new(),
             relative_detect_dir: String::new(),
             additional_scan_dirs: vec![],
+            readonly_scan_dirs: vec![],
             override_skills_dir: Some(primary.to_string_lossy().to_string()),
             is_custom: true,
             recursive_scan: false,
@@ -398,6 +400,7 @@ mod tests {
 
         let adapter_with_extra = tool_adapters::ToolAdapter {
             additional_scan_dirs: vec![plugin_skills.to_string_lossy().to_string()],
+            readonly_scan_dirs: vec![],
             ..adapter
         };
 

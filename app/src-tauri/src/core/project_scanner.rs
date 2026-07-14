@@ -36,6 +36,10 @@ pub struct ProjectSkillInfo {
     pub sync_status: String,
     #[serde(default)]
     pub center_skill_id: Option<String>,
+    /// True when this skill lives in a read-only/vendor-managed scan dir
+    /// (e.g. a plugin cache). Display-only: no delete/sync/import.
+    #[serde(default)]
+    pub read_only: bool,
     #[serde(skip_serializing)]
     pub last_modified_at: Option<i64>,
     #[serde(skip_serializing)]
@@ -100,6 +104,54 @@ pub fn read_linked_workspace_skills(
             &mut skills,
             recursive,
         );
+    }
+    skills.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    skills
+}
+
+/// Read vendor/plugin-managed skills from a read-only root, marking each
+/// `read_only: true`. Uses `scanner::collect_skill_dirs` for deep discovery of
+/// nested bundle layouts (`<pkg>/<version>/skills/<skill>`), which the regular
+/// workspace walk deliberately skips.
+pub fn read_readonly_skills(
+    scan_root: &Path,
+    agent_key: &str,
+    agent_display_name: &str,
+) -> Vec<ProjectSkillInfo> {
+    let mut skills = Vec::new();
+    for path in super::scanner::collect_skill_dirs(scan_root) {
+        let dir_name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "unknown".to_string());
+        let relative_path = path
+            .strip_prefix(scan_root)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        let meta = skill_metadata::parse_skill_md(&path);
+        let name = meta
+            .name
+            .filter(|n| !n.is_empty())
+            .unwrap_or_else(|| dir_name.clone());
+        skills.push(ProjectSkillInfo {
+            name,
+            dir_name,
+            relative_path,
+            description: meta.description,
+            path: path.to_string_lossy().to_string(),
+            files: list_files(&path),
+            enabled: true,
+            agent: agent_key.to_string(),
+            agent_display_name: agent_display_name.to_string(),
+            tags: Vec::new(),
+            in_center: false,
+            sync_status: "project_only".to_string(),
+            center_skill_id: None,
+            read_only: true,
+            last_modified_at: latest_modified_millis(&path),
+            content_hash: content_hash::hash_directory(&path).ok(),
+        });
     }
     skills.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     skills
@@ -198,6 +250,7 @@ fn read_skills_from_dir_recursive(
                 in_center: false,
                 sync_status: "project_only".to_string(),
                 center_skill_id: None,
+                read_only: false,
                 last_modified_at: latest_modified_millis(&path),
                 content_hash: content_hash::hash_directory(&path).ok(),
             });

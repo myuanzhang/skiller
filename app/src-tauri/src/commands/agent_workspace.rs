@@ -39,13 +39,75 @@ fn adapter_for_agent(
 fn read_agent_local_skills(
     adapter: &tool_adapters::ToolAdapter,
 ) -> Vec<project_scanner::ProjectSkillInfo> {
-    project_scanner::read_linked_workspace_skills(
-        &adapter.skills_dir(),
-        None,
-        &adapter.key,
-        &adapter.display_name,
-        adapter.recursive_scan,
-    )
+    // Scan the primary skills dir plus any additional discovery roots (e.g.
+    // Codex also reads the shared `~/.agents/skills`). Skills are merged and
+    // deduped by canonical path so a skill reachable from two roots (e.g. via
+    // symlink) is listed once. The primary dir is scanned first and wins.
+    let mut skills: Vec<project_scanner::ProjectSkillInfo> = Vec::new();
+    let mut seen: std::collections::HashSet<PathBuf> = std::collections::HashSet::new();
+
+    for scan_dir in adapter.all_scan_dirs() {
+        for skill in project_scanner::read_linked_workspace_skills(
+            &scan_dir,
+            None,
+            &adapter.key,
+            &adapter.display_name,
+            adapter.recursive_scan,
+        ) {
+            let canonical =
+                std::fs::canonicalize(&skill.path).unwrap_or_else(|_| PathBuf::from(&skill.path));
+            if seen.insert(canonical) {
+                skills.push(skill);
+            }
+        }
+    }
+
+    // Read-only vendor/plugin dirs (e.g. Codex's ~/.codex/plugins/cache).
+    // Display-only; deduped against writable dirs so a skill already surfaced
+    // there isn't re-added as read-only.
+    for scan_dir in adapter.readonly_existing_scan_dirs() {
+        for skill in
+            project_scanner::read_readonly_skills(&scan_dir, &adapter.key, &adapter.display_name)
+        {
+            let canonical =
+                std::fs::canonicalize(&skill.path).unwrap_or_else(|_| PathBuf::from(&skill.path));
+            if seen.insert(canonical) {
+                skills.push(skill);
+            }
+        }
+    }
+
+    skills.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    skills
+}
+
+/// Validate that `path` lives within one of the adapter's scan directories
+/// (primary skills dir or any additional discovery root). Multi-dir aware
+/// replacement for a single-root `ensure_dir_within_root` check — the security
+/// boundary is unchanged (still confined to adapter-declared directories).
+fn ensure_path_within_scan_dirs(
+    path: &Path,
+    adapter: &tool_adapters::ToolAdapter,
+) -> Result<(), AppError> {
+    if adapter
+        .all_scan_dirs()
+        .iter()
+        .any(|root| ensure_dir_within_root(path, root).is_ok())
+    {
+        return Ok(());
+    }
+    Err(AppError::invalid_input("Invalid skill directory path"))
+}
+
+/// Reject write operations on vendor/plugin-managed (read-only) skills. Defense
+/// in depth beyond hiding the UI buttons.
+fn ensure_not_read_only(skill: &project_scanner::ProjectSkillInfo) -> Result<(), AppError> {
+    if skill.read_only {
+        return Err(AppError::invalid_input(
+            "This skill is read-only (vendor/plugin-managed) and cannot be modified",
+        ));
+    }
+    Ok(())
 }
 
 fn enrich_center_status(
@@ -77,11 +139,6 @@ fn find_agent_skill(
         .into_iter()
         .find(|skill| skill.relative_path == skill_relative_path)
         .ok_or_else(|| AppError::not_found("Skill not found in agent local directory"))
-}
-
-fn ensure_agent_skill_path(path: &Path, skills_root: &Path) -> Result<(), AppError> {
-    ensure_dir_within_root(path, skills_root)?;
-    Ok(())
 }
 
 fn path_matches_skill_path(
@@ -186,6 +243,53 @@ pub async fn get_global_local_skills(
     .await?
 }
 
+/// Open one of the agent's skill scan directories in the OS file browser.
+/// The path is validated to be one of the agent's declared scan dirs (primary,
+/// additional, or read-only) so arbitrary paths can't be opened through this
+/// command. Opening a read-only dir is safe — it's a view action.
+#[tauri::command]
+pub async fn open_agent_scan_dir(
+    store: State<'_, Arc<SkillStore>>,
+    agent: String,
+    dir: String,
+) -> Result<(), AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let adapter = adapter_for_agent(&store, &agent)?;
+        let requested = PathBuf::from(&dir);
+        let requested_canon = std::fs::canonicalize(&requested).unwrap_or_else(|_| requested.clone());
+
+        let mut allowed = adapter.all_scan_dirs();
+        allowed.extend(adapter.readonly_existing_scan_dirs());
+        let is_scan_dir = allowed.iter().any(|scan_dir| {
+            let scan_canon =
+                std::fs::canonicalize(scan_dir).unwrap_or_else(|_| scan_dir.clone());
+            scan_canon == requested_canon || *scan_dir == requested
+        });
+        if !is_scan_dir {
+            return Err(AppError::invalid_input(
+                "Directory is not a scan directory for this agent",
+            ));
+        }
+
+        if !requested.exists() {
+            return Err(AppError::io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Directory not found: {}", requested.display()),
+            )));
+        }
+
+        tauri_plugin_opener::open_path(&requested, Option::<&str>::None).map_err(|e| {
+            AppError::io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to open directory: {}", e),
+            ))
+        })?;
+        Ok(())
+    })
+    .await?
+}
+
 #[tauri::command]
 pub async fn get_global_local_skill_document(
     store: State<'_, Arc<SkillStore>>,
@@ -197,11 +301,13 @@ pub async fn get_global_local_skill_document(
         let adapter = adapter_for_agent(&store, &agent)?;
         ensure_safe_skill_relative_path(&skill_relative_path)?;
 
-        let skills_root = adapter.skills_dir();
-        let skill_dir = skills_root.join(&skill_relative_path);
-        ensure_agent_skill_path(&skill_dir, &skills_root)?;
+        // Locate the skill across all scan dirs (primary + additional roots
+        // like `~/.agents/skills`), then read its document from the real path.
+        let skill = find_agent_skill(&adapter, &skill_relative_path)?;
+        let skill_dir = PathBuf::from(&skill.path);
+        ensure_path_within_scan_dirs(&skill_dir, &adapter)?;
 
-        let allowed_roots = vec![skills_root];
+        let allowed_roots = adapter.all_scan_dirs();
         let candidates = ["SKILL.md", "skill.md", "CLAUDE.md", "README.md"];
         for candidate in &candidates {
             let file_path = skill_dir.join(candidate);
@@ -261,10 +367,10 @@ fn import_agent_local_skill_to_center(
 ) -> Result<(), AppError> {
     let adapter = adapter_for_agent(store, agent)?;
     let skill = find_agent_skill(&adapter, skill_relative_path)?;
+    ensure_not_read_only(&skill)?;
 
-    let skills_root = adapter.skills_dir();
     let source_path = PathBuf::from(&skill.path);
-    ensure_agent_skill_path(&source_path, &skills_root)?;
+    ensure_path_within_scan_dirs(&source_path, &adapter)?;
 
     let all_managed = store.get_all_skills().unwrap_or_default();
     let all_targets = store.get_all_targets().unwrap_or_default();
@@ -451,6 +557,7 @@ fn update_agent_local_skill_from_center(
 ) -> Result<(), AppError> {
     let adapter = adapter_for_agent(store, agent)?;
     let skill = find_agent_skill(&adapter, skill_relative_path)?;
+    ensure_not_read_only(&skill)?;
     let all_managed = store.get_all_skills().unwrap_or_default();
     let all_targets = store.get_all_targets().unwrap_or_default();
     let managed = find_verified_center_match(&skill, &all_managed, &all_targets)
@@ -462,9 +569,8 @@ fn update_agent_local_skill_from_center(
         ));
     }
 
-    let skills_root = adapter.skills_dir();
     let target_path = PathBuf::from(&skill.path);
-    ensure_agent_skill_path(&target_path, &skills_root)?;
+    ensure_path_within_scan_dirs(&target_path, &adapter)?;
 
     let source = PathBuf::from(&managed.central_path);
     let configured_mode = store.get_setting("sync_mode").map_err(AppError::db)?;
@@ -493,18 +599,25 @@ fn delete_agent_local_skill(
 ) -> Result<(), AppError> {
     let adapter = adapter_for_agent(store, agent)?;
     ensure_safe_skill_relative_path(skill_relative_path)?;
-    let skills_root = adapter.skills_dir();
-    let requested_path = skills_root.join(skill_relative_path);
-    ensure_agent_skill_path(&requested_path, &skills_root)?;
 
-    if let Ok(metadata) = std::fs::symlink_metadata(&requested_path) {
-        if metadata.file_type().is_symlink() && !requested_path.exists() {
-            sync_engine::remove_target(&requested_path).map_err(AppError::io)?;
-            return Ok(());
+    // Broken-symlink fast path: a dangling symlink is not a valid skill dir, so
+    // `find_agent_skill` can't locate it. Probe each scan dir for the relative
+    // path and remove it directly if it's a broken symlink.
+    for scan_dir in adapter.all_scan_dirs() {
+        let requested_path = scan_dir.join(skill_relative_path);
+        if ensure_dir_within_root(&requested_path, &scan_dir).is_err() {
+            continue;
+        }
+        if let Ok(metadata) = std::fs::symlink_metadata(&requested_path) {
+            if metadata.file_type().is_symlink() && !requested_path.exists() {
+                sync_engine::remove_target(&requested_path).map_err(AppError::io)?;
+                return Ok(());
+            }
         }
     }
 
     let skill = find_agent_skill(&adapter, skill_relative_path)?;
+    ensure_not_read_only(&skill)?;
 
     let all_managed = store.get_all_skills().unwrap_or_default();
     let all_targets = store.get_all_targets().unwrap_or_default();
@@ -520,7 +633,7 @@ fn delete_agent_local_skill(
     }
 
     let target_path = PathBuf::from(&skill.path);
-    ensure_agent_skill_path(&target_path, &skills_root)?;
+    ensure_path_within_scan_dirs(&target_path, &adapter)?;
     sync_engine::remove_target(&target_path).map_err(AppError::io)?;
     Ok(())
 }
@@ -529,12 +642,148 @@ fn delete_agent_local_skill(
 mod tests {
     use super::{
         backfill_stranded_agent_targets, delete_agent_local_skill, enrich_center_status,
-        import_agent_local_skill_to_center, update_agent_local_skill_from_center,
+        ensure_path_within_scan_dirs, import_agent_local_skill_to_center, read_agent_local_skills,
+        update_agent_local_skill_from_center,
     };
     use crate::core::content_hash;
     use crate::core::project_scanner::ProjectSkillInfo;
     use crate::core::skill_store::{ScenarioRecord, SkillRecord, SkillStore};
+    use crate::core::tool_adapters::{ToolAdapter, ToolCategory};
     use crate::core::{central_repo, installer};
+
+    fn write_skill(dir: &std::path::Path, name: &str) {
+        std::fs::create_dir_all(dir).unwrap();
+        std::fs::write(
+            dir.join("SKILL.md"),
+            format!("---\nname: {name}\ndescription: test\n---\n# {name}"),
+        )
+        .unwrap();
+    }
+
+    fn adapter_with_extra_dir(primary: &std::path::Path, extra: &std::path::Path) -> ToolAdapter {
+        // `additional_scan_dirs` normally resolves home-relative; use an
+        // absolute override there so the test can point at a tempdir.
+        ToolAdapter {
+            key: "test_agent".into(),
+            display_name: "Test Agent".into(),
+            relative_skills_dir: String::new(),
+            relative_detect_dir: String::new(),
+            additional_scan_dirs: vec![extra.to_string_lossy().into_owned()],
+            readonly_scan_dirs: vec![],
+            override_skills_dir: Some(primary.to_string_lossy().into_owned()),
+            is_custom: true,
+            recursive_scan: false,
+            project_relative_skills_dir: None,
+            category: ToolCategory::Coding,
+        }
+    }
+
+    #[test]
+    fn read_agent_local_skills_merges_primary_and_additional_dirs() {
+        let temp = tempfile::tempdir().unwrap();
+        let primary = temp.path().join("codex-skills");
+        let shared = temp.path().join("agents-skills");
+        write_skill(&primary.join("primary-skill"), "primary-skill");
+        write_skill(&shared.join("shared-skill"), "shared-skill");
+
+        let adapter = adapter_with_extra_dir(&primary, &shared);
+        let skills = read_agent_local_skills(&adapter);
+
+        let names: Vec<&str> = skills.iter().map(|s| s.dir_name.as_str()).collect();
+        assert!(names.contains(&"primary-skill"), "got {names:?}");
+        assert!(names.contains(&"shared-skill"), "got {names:?}");
+    }
+
+    #[test]
+    fn read_agent_local_skills_dedups_same_canonical_path() {
+        // When primary and additional roots resolve to the same directory, a
+        // skill must appear once, not twice.
+        let temp = tempfile::tempdir().unwrap();
+        let primary = temp.path().join("skills");
+        write_skill(&primary.join("only-skill"), "only-skill");
+
+        let adapter = adapter_with_extra_dir(&primary, &primary);
+        let skills = read_agent_local_skills(&adapter);
+
+        assert_eq!(
+            skills.iter().filter(|s| s.dir_name == "only-skill").count(),
+            1
+        );
+    }
+
+    fn adapter_with_readonly_dir(primary: &std::path::Path, readonly: &std::path::Path) -> ToolAdapter {
+        ToolAdapter {
+            key: "test_agent".into(),
+            display_name: "Test Agent".into(),
+            relative_skills_dir: String::new(),
+            relative_detect_dir: String::new(),
+            additional_scan_dirs: vec![],
+            readonly_scan_dirs: vec![readonly.to_string_lossy().into_owned()],
+            override_skills_dir: Some(primary.to_string_lossy().into_owned()),
+            is_custom: true,
+            recursive_scan: false,
+            project_relative_skills_dir: None,
+            category: ToolCategory::Coding,
+        }
+    }
+
+    #[test]
+    fn read_agent_local_skills_tags_readonly_and_finds_nested_bundle() {
+        // Read-only dir uses deep discovery: a plugin-cache-style nested layout
+        // <pkg>/<version>/skills/<skill> must be found and flagged read_only.
+        let temp = tempfile::tempdir().unwrap();
+        let primary = temp.path().join("skills");
+        write_skill(&primary.join("writable-skill"), "writable-skill");
+        let readonly = temp.path().join("plugins/cache");
+        write_skill(
+            &readonly.join("vendor-pkg/1.0.0/skills/bundled-skill"),
+            "bundled-skill",
+        );
+
+        let adapter = adapter_with_readonly_dir(&primary, &readonly);
+        let skills = read_agent_local_skills(&adapter);
+
+        let writable = skills.iter().find(|s| s.dir_name == "writable-skill").unwrap();
+        assert!(!writable.read_only);
+        let bundled = skills.iter().find(|s| s.dir_name == "bundled-skill").unwrap();
+        assert!(bundled.read_only, "nested bundle skill should be read_only");
+    }
+
+    #[test]
+    fn delete_rejects_read_only_skill() {
+        // A vendor/plugin skill (read_only) must be rejected by the write guard
+        // that import/update/delete all call.
+        let temp = tempfile::tempdir().unwrap();
+        let primary = temp.path().join("skills");
+        std::fs::create_dir_all(&primary).unwrap();
+        let readonly = temp.path().join("plugins/cache");
+        write_skill(&readonly.join("vendor/1.0.0/skills/bundled"), "bundled");
+
+        let adapter = adapter_with_readonly_dir(&primary, &readonly);
+        let skill = read_agent_local_skills(&adapter)
+            .into_iter()
+            .find(|s| s.dir_name == "bundled")
+            .unwrap();
+        assert!(skill.read_only);
+        assert!(super::ensure_not_read_only(&skill).is_err());
+    }
+
+    #[test]
+    fn ensure_path_within_scan_dirs_accepts_additional_and_rejects_outside() {
+        let temp = tempfile::tempdir().unwrap();
+        let primary = temp.path().join("primary");
+        let shared = temp.path().join("shared");
+        std::fs::create_dir_all(&primary).unwrap();
+        std::fs::create_dir_all(&shared).unwrap();
+        let adapter = adapter_with_extra_dir(&primary, &shared);
+
+        assert!(ensure_path_within_scan_dirs(&primary.join("a-skill"), &adapter).is_ok());
+        assert!(ensure_path_within_scan_dirs(&shared.join("b-skill"), &adapter).is_ok());
+        assert!(
+            ensure_path_within_scan_dirs(&temp.path().join("elsewhere/x"), &adapter).is_err()
+        );
+    }
+
     use std::collections::HashMap;
 
     #[cfg(unix)]
@@ -664,6 +913,7 @@ mod tests {
             in_center: false,
             sync_status: "project_only".to_string(),
             center_skill_id: None,
+            read_only: false,
             last_modified_at: None,
             content_hash: Some("same-hash".to_string()),
         };

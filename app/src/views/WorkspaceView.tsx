@@ -4,10 +4,12 @@ import {
   ChevronRight,
   Download,
   FileText,
+  FolderOpen,
   Globe,
   LayoutGrid,
   List,
   Loader2,
+  Lock,
   Plus,
   RefreshCw,
   Search,
@@ -40,6 +42,28 @@ import type { WorkspaceConfig } from "./workspaceConfigs";
 
 function compactHomePath(path: string) {
   return path.replace(/^\/Users\/[^/]+/, "~");
+}
+
+/** Short label for a scan dir, e.g. "/Users/x/.agents/skills" -> ".agents". */
+function scanDirShortLabel(dir: string): string {
+  const compact = compactHomePath(dir);
+  const seg = compact.split("/").find((s) => s.startsWith("."));
+  return seg ?? compact;
+}
+
+/**
+ * Given a skill's absolute path and the agent's ordered scan dirs (primary
+ * first), return the owning scan dir. Longest-prefix match handles nested roots.
+ */
+function ownerScanDir(skillPath: string, scanDirs: string[]): string | null {
+  let best: string | null = null;
+  for (const dir of scanDirs) {
+    const prefix = dir.endsWith("/") ? dir : `${dir}/`;
+    if (skillPath === dir || skillPath.startsWith(prefix)) {
+      if (!best || dir.length > best.length) best = dir;
+    }
+  }
+  return best;
 }
 
 function buildBrokenSymlinkSkill(
@@ -84,6 +108,8 @@ function WorkspaceSkillCard({
   fileCount = 0,
   active = false,
   isBroken = false,
+  sourceBadge,
+  readOnly = null,
   actions,
   actionsHover = false,
   onClick,
@@ -96,6 +122,10 @@ function WorkspaceSkillCard({
   fileCount?: number;
   active?: boolean;
   isBroken?: boolean;
+  /** Optional chip marking which non-primary scan dir this skill lives in. */
+  sourceBadge?: { label: string; title: string; onClick?: () => void } | null;
+  /** Vendor/plugin-managed: pre-translated chip label/hint. Implies no write actions. */
+  readOnly?: { label: string; title: string } | null;
   actions?: ReactNode;
   actionsHover?: boolean;
   onClick?: () => void;
@@ -117,6 +147,28 @@ function WorkspaceSkillCard({
         >
           {title}
         </h3>
+        {readOnly && (
+          <span
+            title={readOnly.title}
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-warning-border bg-warning-bg px-1.5 py-0.5 text-[10px] font-medium text-warning"
+          >
+            <Lock className="h-2.5 w-2.5" />
+            {readOnly.label}
+          </span>
+        )}
+        {sourceBadge && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              sourceBadge.onClick?.();
+            }}
+            title={sourceBadge.title}
+            className="inline-flex shrink-0 items-center rounded-full border border-info-border bg-info-bg px-1.5 py-0.5 font-mono text-[10px] font-medium text-info transition-colors hover:bg-info/15"
+          >
+            {sourceBadge.label}
+          </button>
+        )}
         <p className={cn(
           "min-w-0 flex-1 truncate text-[13px]",
           isBroken ? "text-red-600/80 line-through decoration-red-500/50 dark:text-red-300/80" : "text-muted"
@@ -178,6 +230,28 @@ function WorkspaceSkillCard({
         >
           {title}
         </h3>
+        {readOnly && (
+          <span
+            title={readOnly.title}
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-warning-border bg-warning-bg px-1.5 py-0.5 text-[10px] font-medium text-warning"
+          >
+            <Lock className="h-2.5 w-2.5" />
+            {readOnly.label}
+          </span>
+        )}
+        {sourceBadge && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              sourceBadge.onClick?.();
+            }}
+            title={sourceBadge.title}
+            className="inline-flex shrink-0 items-center rounded-full border border-info-border bg-info-bg px-1.5 py-0.5 font-mono text-[10px] font-medium text-info transition-colors hover:bg-info/15"
+          >
+            {sourceBadge.label}
+          </button>
+        )}
         {fileCount > 0 && (
           <span className="flex shrink-0 items-center gap-1 text-[12px] text-faint">
             <FileText className="h-3 w-3" />
@@ -255,6 +329,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
+  const [showAllScanDirs, setShowAllScanDirs] = useState(false);
   const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<ProjectSkill["sync_status"] | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -309,6 +384,18 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const currentTool = useMemo(
     () => (agentKey ? installedTools.find((t) => t.key === agentKey) ?? null : null),
     [agentKey, installedTools]
+  );
+
+  const openScanDir = useCallback(
+    async (dir: string) => {
+      if (!agentKey) return;
+      try {
+        await api.openAgentScanDir(agentKey, dir);
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, t("common.error")));
+      }
+    },
+    [agentKey, t]
   );
 
   // Preset actions must target what is actually rendered: a single agent when
@@ -629,6 +716,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   }, [loadLocalSkills, refreshManagedSkills, refreshTools]);
 
   const renderLocalSkillActions = (skill: ProjectSkill, variant: "grid" | "list") => {
+    // Vendor/plugin-managed skills are display-only: no pull/adopt/remove/delete.
+    if (skill.read_only) return null;
     const uploadKey = `upload:${skill.relative_path}`;
     const pullKey = `pull:${skill.relative_path}`;
     const deleteKey = `delete:${skill.relative_path}`;
@@ -832,7 +921,35 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               <span className="app-badge">{localSkills.length}</span>
             </h1>
             <p className="mt-1 truncate text-[13px] text-muted" title={currentTool.skills_dir}>
-              {compactHomePath(currentTool.skills_dir)}
+              <button
+                type="button"
+                onClick={() => void openScanDir(currentTool.skills_dir)}
+                className="rounded-control underline decoration-transparent underline-offset-2 transition-colors hover:text-secondary hover:decoration-muted"
+                title={t("globalWorkspace.localSkills.openDir")}
+              >
+                {compactHomePath(currentTool.skills_dir)}
+              </button>
+              {(() => {
+                const scanDirs = currentTool.scan_dirs ?? [];
+                const readonlyDirs = currentTool.readonly_dirs ?? [];
+                const extraCount =
+                  scanDirs.filter((d) => d !== currentTool.skills_dir).length + readonlyDirs.length;
+                if (extraCount === 0) return null;
+                const allExtra = [
+                  ...scanDirs.filter((d) => d !== currentTool.skills_dir),
+                  ...readonlyDirs,
+                ];
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllScanDirs((v) => !v)}
+                    className="ml-1.5 rounded-full border border-info-border bg-info-bg px-1.5 py-0.5 text-[11px] font-medium text-info transition-colors hover:bg-info/15"
+                    title={allExtra.map(compactHomePath).join("\n")}
+                  >
+                    +{extraCount} {t("globalWorkspace.localSkills.otherDirs")}
+                  </button>
+                );
+              })()}
               <span className="px-1.5">·</span>
               {t("globalWorkspace.localSkills.summary", {
                 total: localSkills.length,
@@ -840,6 +957,52 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 localOnly: localOnlyCount,
               })}
             </p>
+            {showAllScanDirs && (() => {
+              const scanDirs = currentTool.scan_dirs ?? [];
+              const readonlyDirs = currentTool.readonly_dirs ?? [];
+              const rows: { dir: string; kind: "primary" | "extra" | "readonly" }[] = [
+                ...scanDirs.map((dir, i) => ({
+                  dir,
+                  kind: (i === 0 ? "primary" : "extra") as "primary" | "extra",
+                })),
+                ...readonlyDirs.map((dir) => ({ dir, kind: "readonly" as const })),
+              ];
+              if (rows.length <= 1) return null;
+              return (
+                <ul className="mt-1.5 flex flex-col gap-1 text-[12px]">
+                  {rows.map(({ dir, kind }) => (
+                    <li key={dir}>
+                      <button
+                        type="button"
+                        onClick={() => void openScanDir(dir)}
+                        title={t("globalWorkspace.localSkills.openDir")}
+                        className="group/dir flex w-full min-w-0 items-center gap-1.5 rounded-control py-0.5 pr-2 font-mono text-muted transition-colors hover:text-secondary"
+                      >
+                        <span
+                          className={cn(
+                            "inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                            kind === "primary"
+                              ? "bg-surface-hover text-faint"
+                              : kind === "readonly"
+                                ? "border border-warning-border bg-warning-bg text-warning"
+                                : "border border-info-border bg-info-bg text-info"
+                          )}
+                        >
+                          {kind === "readonly" && <Lock className="h-2.5 w-2.5" />}
+                          {kind === "primary"
+                            ? t("globalWorkspace.localSkills.primaryDir")
+                            : kind === "readonly"
+                              ? t("globalWorkspace.localSkills.readOnly")
+                              : scanDirShortLabel(dir)}
+                        </span>
+                        <span className="truncate" title={dir}>{compactHomePath(dir)}</span>
+                        <FolderOpen className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover/dir:opacity-100" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
           </div>
 
           <div className="flex min-w-0 flex-[2_1_520px] flex-wrap items-center justify-end gap-2">
@@ -1052,6 +1215,19 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
             const isManaged = !!skill.center_skill_id && managedLocalIds.has(skill.center_skill_id);
             const isBroken = brokenSymlinks.includes(skill.relative_path);
 
+            // Badge skills that live in a non-primary scan dir (e.g. the shared
+            // ~/.agents/skills), so cross-agent skills are visually distinct.
+            const scanDirs = currentTool.scan_dirs ?? [currentTool.skills_dir];
+            const owner = ownerScanDir(skill.path, scanDirs);
+            const sourceBadge =
+              owner && owner !== scanDirs[0]
+                ? {
+                    label: scanDirShortLabel(owner),
+                    title: compactHomePath(owner),
+                    onClick: () => void openScanDir(owner),
+                  }
+                : null;
+
             return (
               <WorkspaceSkillCard
                 key={`${skill.agent}:${skill.relative_path}`}
@@ -1063,6 +1239,15 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 fileCount={skill.files.length}
                 active={isManaged}
                 isBroken={isBroken}
+                sourceBadge={sourceBadge}
+                readOnly={
+                  skill.read_only
+                    ? {
+                        label: t("globalWorkspace.localSkills.readOnly"),
+                        title: t("globalWorkspace.localSkills.readOnlyHint"),
+                      }
+                    : null
+                }
                 actions={renderLocalSkillActions(skill, viewMode)}
                 actionsHover={viewMode === "list"}
                 onClick={isBroken ? undefined : () => void openLocalDetail(skill)}
@@ -1099,6 +1284,15 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               >
                 {getLocalStatusMeta(t, localDetailSkill.sync_status).label}
               </StatusPill>
+              {localDetailSkill.read_only && (
+                <span
+                  title={t("globalWorkspace.localSkills.readOnlyHint")}
+                  className="inline-flex items-center gap-1 rounded-full border border-warning-border bg-warning-bg px-2.5 py-1 text-[12px] font-medium text-warning"
+                >
+                  <Lock className="h-3 w-3" />
+                  {t("globalWorkspace.localSkills.readOnly")}
+                </span>
+              )}
               <span className="rounded-full bg-surface-hover px-2.5 py-1 text-[12px] text-muted">
                 {localDetailSkill.relative_path}
               </span>

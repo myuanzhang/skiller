@@ -9,6 +9,11 @@ export interface ToolInfo {
   display_name: string;
   installed: boolean;
   skills_dir: string;
+  /** All roots this agent reads skills from: primary skills_dir first, then
+   *  any existing additional discovery dirs (e.g. shared ~/.agents/skills). */
+  scan_dirs: string[];
+  /** Read-only vendor/plugin roots that exist (e.g. ~/.codex/plugins/cache). */
+  readonly_dirs: string[];
   enabled: boolean;
   is_custom: boolean;
   has_path_override: boolean;
@@ -182,6 +187,8 @@ export interface ProjectSkill {
   in_center: boolean;
   sync_status: "project_only" | "in_sync" | "project_newer" | "center_newer" | "diverged";
   center_skill_id: string | null;
+  /** True for vendor/plugin-managed skills (e.g. Codex plugin cache): display-only. */
+  read_only?: boolean;
 }
 
 export interface ProjectSkillDocument {
@@ -683,6 +690,9 @@ export const getGlobalLocalSkills = (agent: string) =>
 
 export const getGlobalLocalSkillDocument = (agent: string, skillRelativePath: string) =>
   invoke<ProjectSkillDocument>("get_global_local_skill_document", { agent, skillRelativePath });
+
+export const openAgentScanDir = (agent: string, dir: string) =>
+  invoke<void>("open_agent_scan_dir", { agent, dir });
 
 export const importGlobalLocalSkillToCenter = (agent: string, skillRelativePath: string) =>
   invoke<void>("import_global_local_skill_to_center", { agent, skillRelativePath });

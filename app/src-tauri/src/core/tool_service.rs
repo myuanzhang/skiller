@@ -13,6 +13,15 @@ pub struct ToolInfo {
     pub display_name: String,
     pub installed: bool,
     pub skills_dir: String,
+    /// All directories this agent reads skills from: the primary `skills_dir`
+    /// first, then any additional discovery roots that currently exist (e.g.
+    /// the shared `~/.agents/skills`). Lets the UI show every source and badge
+    /// skills by which root they came from.
+    pub scan_dirs: Vec<String>,
+    /// Read-only vendor/plugin roots that currently exist (e.g. Codex's
+    /// `~/.codex/plugins/cache`). Displayed as sources but skills there are
+    /// view-only.
+    pub readonly_dirs: Vec<String>,
     pub enabled: bool,
     pub is_custom: bool,
     pub has_path_override: bool,
@@ -222,6 +231,16 @@ pub fn list_tool_info(store: &SkillStore) -> Vec<ToolInfo> {
             display_name: adapter.display_name.clone(),
             installed: adapter.is_installed(),
             skills_dir: adapter.skills_dir().to_string_lossy().to_string(),
+            scan_dirs: adapter
+                .all_scan_dirs()
+                .iter()
+                .map(|p| p.to_string_lossy().to_string())
+                .collect(),
+            readonly_dirs: adapter
+                .readonly_existing_scan_dirs()
+                .iter()
+                .map(|p| p.to_string_lossy().to_string())
+                .collect(),
             enabled: !disabled.contains(&adapter.key),
             is_custom: adapter.is_custom,
             has_path_override: adapter.has_path_override(),
