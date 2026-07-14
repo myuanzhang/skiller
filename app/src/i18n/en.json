@@ -178,6 +178,8 @@
     "sourceOpenUrl": "Click to open source",
     "sourceOpenFailed": "Failed to open source: {{message}}",
     "openSourceLink": "Open source",
+    "updatesOnly": "Needs update",
+    "updatesOnlyHint": "Show only skills with an available update",
     "detectBrokenSymlinks": "Detect Broken Links",
     "brokenSymlinksDetected": "Detected {{count}} broken symlink skills: {{names}}",
     "noBrokenSymlinks": "No broken symlinks found",

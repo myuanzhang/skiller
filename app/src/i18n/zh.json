@@ -179,6 +179,8 @@
     "sourceOpenUrl": "点击打开来源",
     "sourceOpenFailed": "打开来源失败：{{message}}",
     "openSourceLink": "打开来源",
+    "updatesOnly": "待更新",
+    "updatesOnlyHint": "仅显示有可用更新的技能",
     "docTabs": {
       "local": "本地",
       "diff": "差异",

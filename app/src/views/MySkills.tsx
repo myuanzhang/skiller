@@ -135,6 +135,8 @@ export function MySkills() {
   const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">("all");
   const [sourceFilters, setSourceFilters] = useState<Set<string>>(new Set());
   const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
+  // Quick filter: show only skills that have an available update.
+  const [updatesOnly, setUpdatesOnly] = useState(false);
   const [allTags, setAllTags] = useState<string[]>([]);
   // Tag management from the filter bar (#233): right-click a tag pill to
   // rename (dialog) or delete (confirm). Left-click stays "filter only".
@@ -259,6 +261,8 @@ export function MySkills() {
 
       if (sourceFilters.size > 0 && !sourceFilters.has(skill.source_type)) return false;
 
+      if (updatesOnly && skill.update_status !== "update_available") return false;
+
       if (tagFilters.size > 0) {
         const wantUntagged = tagFilters.has(UNTAGGED_FILTER);
         const matchUntagged = wantUntagged && skill.tags.length === 0;
@@ -291,7 +295,7 @@ export function MySkills() {
     }
 
     return result;
-  }, [skills, skillDisplayNames, search, sourceFilters, tagFilters, filterMode, viewedPreset, presetSkillOrder]);
+  }, [skills, skillDisplayNames, search, sourceFilters, tagFilters, updatesOnly, filterMode, viewedPreset, presetSkillOrder]);
 
   const {
     isMultiSelect, setIsMultiSelect,
@@ -1319,6 +1323,9 @@ export function MySkills() {
         sourceFilters={sourceFilters}
         tagFilters={tagFilters}
         allTags={allTags}
+        updatesOnly={updatesOnly}
+        updateCount={availableUpdateCount}
+        onUpdatesOnlyToggle={() => setUpdatesOnly((v) => !v)}
         onSourceFilterToggle={(source) => setSourceFilters(toggleFilter(sourceFilters, source))}
         onTagFilterToggle={(tag) => setTagFilters(toggleFilter(tagFilters, tag))}
         onUntaggedFilterToggle={() => setTagFilters(toggleTagFilter(tagFilters, UNTAGGED_FILTER))}
