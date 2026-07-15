@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import {
+  AlertTriangle,
   ChevronRight,
   Download,
   FileText,
@@ -13,7 +14,9 @@ import {
   Plus,
   RefreshCw,
   Search,
+  SlidersHorizontal,
   CircleSlash,
+  Tag,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -66,6 +69,19 @@ function ownerScanDir(skillPath: string, scanDirs: string[]): string | null {
   return best;
 }
 
+/** Sentinel bucket key grouping all read-only (vendor/plugin) skills together. */
+const READONLY_DIR_KEY = "__readonly__";
+
+/**
+ * Bucket key used by the directory filter. Read-only skills collapse into one
+ * bucket regardless of which vendor dir they live in; everything else buckets
+ * by its owning scan dir (primary or an additional shared dir like `.agents`).
+ */
+function skillDirBucketKey(skill: ProjectSkill, scanDirs: string[]): string {
+  if (skill.read_only) return READONLY_DIR_KEY;
+  return ownerScanDir(skill.path, scanDirs) ?? scanDirs[0] ?? "";
+}
+
 function buildBrokenSymlinkSkill(
   name: string,
   skillsDir: string,
@@ -110,6 +126,7 @@ function WorkspaceSkillCard({
   isBroken = false,
   sourceBadge,
   readOnly = null,
+  conflictBadge = null,
   onOpenDir,
   openDirLabel,
   actions,
@@ -128,6 +145,8 @@ function WorkspaceSkillCard({
   sourceBadge?: { label: string; title: string; onClick?: () => void } | null;
   /** Vendor/plugin-managed: pre-translated chip label/hint. Implies no write actions. */
   readOnly?: { label: string; title: string } | null;
+  /** Same-name skill exists in another scan dir of this agent (ambiguous which one the agent loads). */
+  conflictBadge?: { label: string; title: string } | null;
   /** Opens the skill's own directory in the OS file browser. */
   onOpenDir?: () => void;
   openDirLabel?: string;
@@ -159,6 +178,15 @@ function WorkspaceSkillCard({
           >
             <Lock className="h-2.5 w-2.5" />
             {readOnly.label}
+          </span>
+        )}
+        {conflictBadge && (
+          <span
+            title={conflictBadge.title}
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-amber-500/40 bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+          >
+            <AlertTriangle className="h-2.5 w-2.5" />
+            {conflictBadge.label}
           </span>
         )}
         {sourceBadge && (
@@ -255,6 +283,15 @@ function WorkspaceSkillCard({
           >
             <Lock className="h-2.5 w-2.5" />
             {readOnly.label}
+          </span>
+        )}
+        {conflictBadge && (
+          <span
+            title={conflictBadge.title}
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-amber-500/40 bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+          >
+            <AlertTriangle className="h-2.5 w-2.5" />
+            {conflictBadge.label}
           </span>
         )}
         {sourceBadge && (
@@ -365,6 +402,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const [showAllScanDirs, setShowAllScanDirs] = useState(false);
   const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<ProjectSkill["sync_status"] | null>(null);
+  const [dirFilter, setDirFilter] = useState<string | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [removingLocalSkillId, setRemovingLocalSkillId] = useState<string | null>(null);
   const [localSkills, setLocalSkills] = useState<ProjectSkill[]>([]);
@@ -519,6 +557,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     setDeleteLocalConfirmSkill(null);
     setTagFilters(new Set());
     setStatusFilter(null);
+    setDirFilter(null);
   }, [currentTool?.key]);
 
   // Close the skill detail when a workspace nav item is clicked, even if the
@@ -573,6 +612,10 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         if (statusFilter !== null && skill.sync_status !== statusFilter) {
           return false;
         }
+        if (dirFilter !== null) {
+          const scanDirs = currentTool?.scan_dirs ?? (currentTool ? [currentTool.skills_dir] : []);
+          if (skillDirBucketKey(skill, scanDirs) !== dirFilter) return false;
+        }
         return true;
       })
       .sort((a, b) => {
@@ -588,7 +631,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           a.name.localeCompare(b.name)
         );
       });
-  }, [localSkills, search, tagFilters, statusFilter]);
+  }, [localSkills, search, tagFilters, statusFilter, dirFilter, currentTool]);
 
   // Sync statuses actually present for this agent, ordered like the sort
   // priority above, so the filter row only offers relevant buttons.
@@ -602,6 +645,60 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     ];
     const present = new Set(localSkills.map((s) => s.sync_status));
     return order.filter((status) => present.has(status));
+  }, [localSkills]);
+
+  // Directory buckets actually present among this agent's skills, ordered
+  // primary → additional shared dirs → read-only. Each carries a label and
+  // count so the filter row only offers dirs that hold skills.
+  const presentDirBuckets = useMemo(() => {
+    if (!currentTool) return [];
+    const scanDirs = currentTool.scan_dirs ?? [currentTool.skills_dir];
+    const counts = new Map<string, number>();
+    for (const skill of localSkills) {
+      const key = skillDirBucketKey(skill, scanDirs);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const buckets: { key: string; label: string; count: number }[] = [];
+    // Primary first, then each additional scan dir in declared order.
+    scanDirs.forEach((dir, i) => {
+      const count = counts.get(dir) ?? 0;
+      if (count === 0) return;
+      buckets.push({
+        key: dir,
+        label: i === 0 ? t("globalWorkspace.localSkills.primaryDir") : scanDirShortLabel(dir),
+        count,
+      });
+    });
+    // Read-only skills collapse into one bucket regardless of vendor dir.
+    const readonlyCount = counts.get(READONLY_DIR_KEY) ?? 0;
+    if (readonlyCount > 0) {
+      buckets.push({
+        key: READONLY_DIR_KEY,
+        label: t("globalWorkspace.localSkills.readOnly"),
+        count: readonlyCount,
+      });
+    }
+    return buckets;
+  }, [currentTool, localSkills, t]);
+
+  // Skill dir_names that appear in more than one scan dir of this agent. Since
+  // the agent's own loader — not Skiller — decides which copy wins (and each
+  // agent's precedence differs), we surface the ambiguity rather than hide or
+  // guess a "winner". Maps dir_name -> sorted list of absolute paths.
+  const conflictingSkillPaths = useMemo(() => {
+    const byName = new Map<string, string[]>();
+    for (const skill of localSkills) {
+      const list = byName.get(skill.dir_name) ?? [];
+      list.push(skill.path);
+      byName.set(skill.dir_name, list);
+    }
+    const conflicts = new Map<string, string[]>();
+    for (const [name, paths] of byName) {
+      if (paths.length > 1) {
+        conflicts.set(name, paths.slice().sort());
+      }
+    }
+    return conflicts;
   }, [localSkills]);
 
   const installedIds = useMemo(() => new Set(agentSkills.map((s) => s.id)), [agentSkills]);
@@ -1106,7 +1203,10 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
 
         {presentStatuses.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[12px] text-muted">{t("globalWorkspace.localSkills.statusFilter")}</span>
+            <span className="inline-flex items-center gap-1 text-[12px] text-muted">
+              <SlidersHorizontal className="h-3 w-3" />
+              {t("globalWorkspace.localSkills.statusFilter")}
+            </span>
             <button
               onClick={() => setStatusFilter(null)}
               className={cn(
@@ -1146,9 +1246,54 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           </div>
         )}
 
+        {presentDirBuckets.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 text-[12px] text-muted">
+              <FolderOpen className="h-3 w-3" />
+              {t("globalWorkspace.localSkills.dirFilter")}
+            </span>
+            <button
+              onClick={() => setDirFilter(null)}
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
+                dirFilter === null
+                  ? "bg-accent text-white dark:bg-accent dark:text-white"
+                  : "bg-surface-hover text-muted hover:text-secondary"
+              )}
+            >
+              {t("globalWorkspace.localSkills.allDirs")}
+            </button>
+            {presentDirBuckets.map((bucket) => {
+              const active = dirFilter === bucket.key;
+              const isReadonly = bucket.key === READONLY_DIR_KEY;
+              return (
+                <button
+                  key={bucket.key}
+                  onClick={() => setDirFilter((prev) => (prev === bucket.key ? null : bucket.key))}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
+                    active
+                      ? isReadonly
+                        ? "border border-warning-border bg-warning-bg text-warning ring-1 ring-inset ring-border"
+                        : "bg-accent text-white dark:bg-accent dark:text-white"
+                      : "bg-surface-hover text-muted hover:text-secondary"
+                  )}
+                >
+                  {isReadonly && <Lock className="h-2.5 w-2.5" />}
+                  {bucket.label}
+                  <span className="tabular-nums opacity-70">{bucket.count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {allLocalTags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[12px] text-muted">{t("mySkills.tags.filter")}</span>
+            <span className="inline-flex items-center gap-1 text-[12px] text-muted">
+              <Tag className="h-3 w-3" />
+              {t("mySkills.tags.filter")}
+            </span>
             <button
               onClick={() => setTagFilters(new Set())}
               className={cn(
@@ -1273,9 +1418,21 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                   }
                 : null;
 
+            // Same-name skill in another scan dir: surface the ambiguity (the
+            // agent, not Skiller, decides which copy it actually loads).
+            const conflictPaths = conflictingSkillPaths.get(skill.dir_name);
+            const conflictBadge = conflictPaths
+              ? {
+                  label: t("globalWorkspace.localSkills.nameConflict"),
+                  title: `${t("globalWorkspace.localSkills.nameConflictHint")}\n${conflictPaths
+                    .map(compactHomePath)
+                    .join("\n")}`,
+                }
+              : null;
+
             return (
               <WorkspaceSkillCard
-                key={`${skill.agent}:${skill.relative_path}`}
+                key={`${skill.agent}:${skill.path}`}
                 viewMode={viewMode}
                 title={skill.name}
                 description={skill.description || skill.relative_path}
@@ -1293,6 +1450,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                       }
                     : null
                 }
+                conflictBadge={conflictBadge}
                 actions={renderLocalSkillActions(skill, viewMode)}
                 actionsHover={viewMode === "list"}
                 onOpenDir={isBroken ? undefined : () => void openSkillDir(skill)}
