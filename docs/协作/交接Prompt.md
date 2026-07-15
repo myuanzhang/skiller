@@ -9,7 +9,7 @@ updated: 2026-07-15
 # 交接 Prompt
 
 > 每次开新会话交接时，复制下面的 prompt，填入「本次任务」后发给新会话。
-> 配套文档：`docs/会话交接说明.md`（领域知识）、`CLAUDE.md`（编码准则）。
+> 配套文档：`docs/协作/会话交接说明.md`（领域知识）、`CLAUDE.md`（编码准则）。
 
 ---
 
@@ -22,7 +22,7 @@ updated: 2026-07-15
 1. 先读 CLAUDE.md(编码准则单一真源),严格遵循其四条准则。
 2. 判断本次任务是否涉及 Agent/Skill 目录管理(扫描/显示/只读/多目录、
    ToolAdapter、agent_workspace.rs、WorkspaceView 的 skill 列表、打开本地目录):
-   - 涉及 → 通读 docs/会话交接说明.md;
+   - 涉及 → 通读 docs/协作/会话交接说明.md;
    - 不涉及 → 只读该文档第一节「开工前必读」即可,不要读全文。
 3. 需要最新进度/改动历史时查 git log,不要假设文档里的状态是最新的。
 
@@ -48,7 +48,7 @@ updated: 2026-07-15
 
 ```
 skiller 仓库。先读 CLAUDE.md;本任务涉及 Agent/Skill 目录管理,请通读
-docs/会话交接说明.md(否则只读第一节)。cargo 用 ~/.cargo/bin/cargo,
+docs/协作/会话交接说明.md(否则只读第一节)。cargo 用 ~/.cargo/bin/cargo,
 git 写操作加 dangerouslyDisableSandbox,提交排除 zh.json.bak。
 动手前先跟我对齐方案。任务:<...>
 ```

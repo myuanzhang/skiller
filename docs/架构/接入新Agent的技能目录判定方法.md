@@ -11,7 +11,7 @@ updated: 2026-07-14
 > 本文回答一个问题：**接入一个新的 Agent 时，如何正确判断它的 skill 放在哪些目录、每个目录该归为哪一类？**
 > 结论先行：统一模型**已经存在于代码里**（`ToolAdapter` 的目录字段就是模型），本文补的是「怎么正确填这些字段」的**可复现判定流程**——把之前给 Codex / Claude Code / Grok 配目录时用到的隐性判断显性化。
 >
-> 关联文档：`docs/Agent管理机制.md`（三层过滤：内置定义 ∩ installed ∩ enabled）、`docs/技能目录自动发现与清理机制.md`、`docs/会话交接说明.md`。
+> 关联文档：`docs/架构/Agent管理机制.md`（三层过滤：内置定义 ∩ installed ∩ enabled）、`docs/架构/技能目录自动发现与清理机制.md`、`docs/协作/会话交接说明.md`。
 
 ---
 
@@ -149,7 +149,7 @@ find ~/.<agent>/<suspect-dir> -maxdepth 5 -type d 2>/dev/null | head -40
 3. 若目录布局特殊（嵌套/递归），核对 `recursive_scan` 与只读深扫是否覆盖；必要时加 `read_agent_local_skills` 层级的集成测试。
 4. 一般**无需**改前端 / i18n（除非引入全新概念）。
 5. 过验证四件套：`cargo build`（无 warning）→ `cargo test`（不降基线）→ `npm run build` → i18n 三语（若动了文案）。
-6. 更新 `docs/会话交接说明.md` 变更日志与「已配只读目录的 Agent」清单。
+6. 按 `AGENTS.md` 的收尾规则判断是否更新 `docs/协作/会话交接说明.md`（如「已配只读目录的 Agent」清单等描述性内容变化时就地更新）。
 
 ## 五、为什么不再往上抽一层「自动推断」
 

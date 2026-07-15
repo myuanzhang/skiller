@@ -6,13 +6,14 @@
 
 ```
 skiller/
-├── AGENTS.md              # Agent 行为入口（指针 → CLAUDE.md）
+├── AGENTS.md              # Agent 协作入口（指针 → CLAUDE.md + 文档更新规则）
 ├── CLAUDE.md              # 编码行为准则（单一真源 SSoT）
-├── docs/                  # 文档
-│   ├── Agent管理机制.md    # Agent 管理机制说明
-│   ├── 中央仓库与同步状态.md # 技能中心作用与同步状态说明
-│   ├── BUILD.md           # 本地构建说明
-│   └── research/          # 调研资料
+├── docs/                  # 文档（索引见 docs/README.md）
+│   ├── 架构/              # 现行机制说明（Agent 管理、中央仓库、技能发现等）
+│   ├── 协作/              # AI 协作：会话交接说明、交接 Prompt
+│   ├── 开发环境.md        # 本地构建与运行
+│   ├── research/          # 调研资料
+│   └── archive/           # 已完成的历史计划（冻结存档）
 └── app/                   # 应用代码（Tauri: Rust 后端 + React/TS 前端）
     ├── src/               # 前端
     └── src-tauri/         # 后端 + CLI
@@ -26,13 +27,18 @@ skiller/
 cd app
 npm install
 export PATH="$HOME/.cargo/bin:$PATH"
-export CARGO_TARGET_DIR="/tmp/skiller-target"   # 本机需绕开构建限制，见 docs/BUILD.md
+export CARGO_TARGET_DIR="/tmp/skiller-target"   # 本机需绕开构建限制
 npm run tauri:dev    # 启动桌面 GUI（开发模式）
 npm run cli -- --help # 运行 CLI
 ```
 
-> 本机构建 `.rlib` 时会遇到 `Operation not permitted` 报错（安全软件拦截），
-> 绕过方法与产物路径见 [`docs/BUILD.md`](docs/BUILD.md)。
+> 本机构建 `.rlib` 会遇到 `Operation not permitted`（安全软件拦截）。
+> 绕过方法、产物路径与启动信号见 [`docs/开发环境.md`](docs/开发环境.md)。
+
+## 文档
+
+- 开发文档索引：[`docs/README.md`](docs/README.md)
+- 编码准则：[`CLAUDE.md`](CLAUDE.md)
 
 ## 许可证
 
