@@ -9,6 +9,7 @@ import * as api from "../../lib/tauri";
 import { getTagColor } from "../../lib/skillTags";
 import { cn } from "../../utils";
 import { SkillCardActions } from "./SkillCardActions";
+import { UpdateBadge } from "./UpdateBadge";
 
 interface StatusBadge {
   label: string;
@@ -160,16 +161,14 @@ export function SkillListCard({
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5">
-        {badge && (
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[12px] font-medium",
-              badge.className
-            )}
-          >
-            {badge.label}
-          </span>
-        )}
+        <UpdateBadge
+          skill={skill}
+          badge={badge}
+          canRefresh={canRefresh}
+          updating={updating}
+          refreshLabel={refreshLabel}
+          onRefreshSkill={onRefreshSkill}
+        />
         {usage && usage.count > 0 && (
           <span
             className="rounded-full bg-accent-bg px-2 py-0.5 text-[12px] font-medium text-accent-light"

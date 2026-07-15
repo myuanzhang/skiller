@@ -1190,7 +1190,7 @@ export function MySkills() {
   const statusBadge = (skill: ManagedSkill) => {
     if (skill.update_status === "update_available") {
       return {
-        label: "Update",
+        label: t("mySkills.updateStatus.available"),
         className: "bg-amber-500/12 text-amber-600 dark:text-amber-400",
       };
     }

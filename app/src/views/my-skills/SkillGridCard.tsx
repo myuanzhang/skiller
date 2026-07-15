@@ -10,6 +10,7 @@ import { cn } from "../../utils";
 import { SkillCardActions } from "./SkillCardActions";
 import { SkillGridHoverActions } from "./SkillGridHoverActions";
 import { SkillTagEditor } from "./SkillTagEditor";
+import { UpdateBadge } from "./UpdateBadge";
 
 interface StatusBadge {
   label: string;
@@ -178,16 +179,16 @@ export function SkillGridCard({
         )}>
           {skill.description || "—"}
         </p>
-        {badge && (
+        {(badge || (skill.update_status === "update_available" && canRefresh)) && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-[13px] font-medium",
-                badge.className
-              )}
-            >
-              {badge.label}
-            </span>
+            <UpdateBadge
+              skill={skill}
+              badge={badge}
+              canRefresh={canRefresh}
+              updating={updating}
+              refreshLabel={refreshLabel}
+              onRefreshSkill={onRefreshSkill}
+            />
             {isMissingLocalSource && (
               <>
                 <button
