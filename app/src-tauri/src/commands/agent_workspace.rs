@@ -290,6 +290,51 @@ pub async fn open_agent_scan_dir(
     .await?
 }
 
+/// Open a single skill's own directory in the OS file browser. Takes the
+/// skill's absolute path (already known to the frontend from the loaded skill
+/// list) and validates it lives within one of the agent's scan + read-only
+/// roots before opening — the same containment boundary as
+/// [`open_agent_scan_dir`]. This deliberately avoids re-scanning/hashing the
+/// agent's skill dirs (which is slow for agents with large plugin caches).
+/// Opening is a read-only view action, so read-only skills are allowed too.
+#[tauri::command]
+pub async fn open_agent_skill_dir(
+    store: State<'_, Arc<SkillStore>>,
+    agent: String,
+    skill_path: String,
+) -> Result<(), AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let adapter = adapter_for_agent(&store, &agent)?;
+        let skill_dir = PathBuf::from(&skill_path);
+
+        let mut allowed = adapter.all_scan_dirs();
+        allowed.extend(adapter.readonly_existing_scan_dirs());
+        let within_allowed = allowed
+            .iter()
+            .any(|root| ensure_dir_within_root(&skill_dir, root).is_ok());
+        if !within_allowed {
+            return Err(AppError::invalid_input("Invalid skill directory path"));
+        }
+
+        if !skill_dir.exists() {
+            return Err(AppError::io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Directory not found: {}", skill_dir.display()),
+            )));
+        }
+
+        tauri_plugin_opener::open_path(&skill_dir, Option::<&str>::None).map_err(|e| {
+            AppError::io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to open directory: {}", e),
+            ))
+        })?;
+        Ok(())
+    })
+    .await?
+}
+
 #[tauri::command]
 pub async fn get_global_local_skill_document(
     store: State<'_, Arc<SkillStore>>,

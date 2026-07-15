@@ -110,6 +110,8 @@ function WorkspaceSkillCard({
   isBroken = false,
   sourceBadge,
   readOnly = null,
+  onOpenDir,
+  openDirLabel,
   actions,
   actionsHover = false,
   onClick,
@@ -126,6 +128,9 @@ function WorkspaceSkillCard({
   sourceBadge?: { label: string; title: string; onClick?: () => void } | null;
   /** Vendor/plugin-managed: pre-translated chip label/hint. Implies no write actions. */
   readOnly?: { label: string; title: string } | null;
+  /** Opens the skill's own directory in the OS file browser. */
+  onOpenDir?: () => void;
+  openDirLabel?: string;
   actions?: ReactNode;
   actionsHover?: boolean;
   onClick?: () => void;
@@ -197,6 +202,19 @@ function WorkspaceSkillCard({
               <FileText className="h-3 w-3" />
               {fileCount}
             </span>
+          )}
+          {onOpenDir && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenDir();
+              }}
+              title={openDirLabel}
+              className="inline-flex shrink-0 items-center justify-center rounded-control p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+            </button>
           )}
         </div>
         {actions && (
@@ -284,7 +302,22 @@ function WorkspaceSkillCard({
       </div>
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle px-3.5 py-2.5">
         <StatusPill className={status.className}>{status.label}</StatusPill>
-        {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {onOpenDir && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenDir();
+              }}
+              title={openDirLabel}
+              className="inline-flex shrink-0 items-center justify-center rounded-control p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {actions}
+        </div>
       </div>
     </SkillCardShell>
   );
@@ -391,6 +424,18 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
       if (!agentKey) return;
       try {
         await api.openAgentScanDir(agentKey, dir);
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, t("common.error")));
+      }
+    },
+    [agentKey, t]
+  );
+
+  const openSkillDir = useCallback(
+    async (skill: ProjectSkill) => {
+      if (!agentKey) return;
+      try {
+        await api.openAgentSkillDir(agentKey, skill.path);
       } catch (error: unknown) {
         toast.error(getErrorMessage(error, t("common.error")));
       }
@@ -1250,6 +1295,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 }
                 actions={renderLocalSkillActions(skill, viewMode)}
                 actionsHover={viewMode === "list"}
+                onOpenDir={isBroken ? undefined : () => void openSkillDir(skill)}
+                openDirLabel={t("globalWorkspace.localSkills.openDir")}
                 onClick={isBroken ? undefined : () => void openLocalDetail(skill)}
               />
             );

@@ -1010,6 +1010,7 @@ pub fn run() {
             commands::agent_workspace::get_global_local_skills,
             commands::agent_workspace::get_global_local_skill_document,
             commands::agent_workspace::open_agent_scan_dir,
+            commands::agent_workspace::open_agent_skill_dir,
             commands::agent_workspace::import_global_local_skill_to_center,
             commands::agent_workspace::update_global_local_skill_from_center,
             commands::agent_workspace::delete_global_local_skill,

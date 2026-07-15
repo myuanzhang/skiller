@@ -694,6 +694,9 @@ export const getGlobalLocalSkillDocument = (agent: string, skillRelativePath: st
 export const openAgentScanDir = (agent: string, dir: string) =>
   invoke<void>("open_agent_scan_dir", { agent, dir });
 
+export const openAgentSkillDir = (agent: string, skillPath: string) =>
+  invoke<void>("open_agent_skill_dir", { agent, skillPath });
+
 export const importGlobalLocalSkillToCenter = (agent: string, skillRelativePath: string) =>
   invoke<void>("import_global_local_skill_to_center", { agent, skillRelativePath });
 
