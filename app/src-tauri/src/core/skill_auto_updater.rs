@@ -6,7 +6,6 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::commands::skills::{check_skill_update_internal, update_git_skill_internal};
-use crate::core::repo_lock::RepoLock;
 use crate::core::skill_store::SkillStore;
 
 const SETTING_INTERVAL: &str = "auto_update_check_interval";
@@ -25,11 +24,9 @@ const INITIAL_DELAY: Duration = Duration::from_secs(60);
 /// a changed interval setting takes effect.
 const POLL_INTERVAL: Duration = Duration::from_secs(15 * 60);
 
-/// Brief pause between per-skill checks. Each check holds the central-repo lock
-/// for a network round-trip; without a gap, this loop re-acquires the lock so
-/// quickly that a waiting user-initiated operation can be starved for the whole
-/// round. The pause must exceed the foreground poll cadence in `repo_lock`
-/// (50ms) so a foreground waiter reliably wins the lock during the gap.
+/// Brief pause between per-skill checks to avoid saturating network/disk.
+/// Checks no longer hold the filesystem repo lock, so this is just a
+/// courtesy yield rather than a lock-starvation guard.
 const FOREGROUND_YIELD: Duration = Duration::from_millis(200);
 
 #[derive(Serialize, Clone)]
@@ -151,37 +148,23 @@ fn run_round_blocking(store: &SkillStore) -> Result<(), String> {
         .map(|s| s.id)
         .collect();
 
-    // Take and release the central-repo lock around each individual skill
-    // check. This bounds the worst-case wait for any user-initiated manual
-    // operation to a single skill's network round-trip (rather than the
-    // entire round). A skill whose lock is busy — a manual install/update is
-    // running — is simply skipped; the next scheduled round picks it up.
     let (mut checked, mut available, mut updated, mut failed) =
         (0usize, 0usize, 0usize, 0usize);
     for skill_id in ids {
-        // Yield the lock to any waiting user-initiated operation before taking
-        // it again for the next skill (see FOREGROUND_YIELD).
+        // Yield briefly between checks to avoid starving foreground operations.
         std::thread::sleep(FOREGROUND_YIELD);
         checked += 1;
 
-        // The check holds the repo lock; it must be released before applying,
-        // because update_git_skill_internal acquires the lock itself.
-        let status = {
-            let _lock = match RepoLock::acquire("auto-update check") {
-                Ok(lock) => lock,
-                Err(_) => {
-                    failed += 1;
-                    log::info!("skill auto-updater: skipping {skill_id} (repo busy)");
-                    continue;
-                }
-            };
-            match check_skill_update_internal(store, &skill_id, true, proxy.as_deref()) {
-                Ok(dto) => dto.update_status,
-                Err(err) => {
-                    failed += 1;
-                    log::warn!("skill auto-updater: check failed for {skill_id}: {err}");
-                    continue;
-                }
+        // Checks are read-only (network to temp dirs + DB writes) and don't
+        // need the filesystem repo lock — the lock is only required for
+        // operations that mutate the central skills directory, which the
+        // apply step below acquires itself.
+        let status = match check_skill_update_internal(store, &skill_id, true, proxy.as_deref()) {
+            Ok(dto) => dto.update_status,
+            Err(err) => {
+                failed += 1;
+                log::warn!("skill auto-updater: check failed for {skill_id}: {err}");
+                continue;
             }
         };
 

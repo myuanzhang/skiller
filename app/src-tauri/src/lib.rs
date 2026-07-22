@@ -553,18 +553,8 @@ fn check_updates_from_tray<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
                 .map(|skill| skill.id)
                 .collect();
             for skill_id in ids {
-                // Yield the lock between checks so a waiting user-initiated
-                // operation isn't starved by this loop re-acquiring it
-                // immediately (mirrors the auto-updater's FOREGROUND_YIELD).
+                // Brief yield between checks to avoid saturating network/disk.
                 std::thread::sleep(std::time::Duration::from_millis(200));
-                let _repo_lock = match core::repo_lock::RepoLock::acquire("tray check skill update")
-                {
-                    Ok(lock) => lock,
-                    Err(err) => {
-                        log::warn!("Tray update check: failed to acquire repo lock for {skill_id}: {err}");
-                        continue;
-                    }
-                };
                 if let Err(err) = commands::skills::check_skill_update_internal(
                     &store_for_task,
                     &skill_id,
