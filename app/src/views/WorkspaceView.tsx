@@ -19,6 +19,7 @@ import {
   Tag,
   Trash2,
   Upload,
+  Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -31,8 +32,7 @@ import { DetailSheet } from "../components/DetailSheet";
 import { SkillMarkdown } from "../components/SkillMarkdown";
 import { DocumentDiffViewer } from "../components/DocumentDiffViewer";
 import * as api from "../lib/tauri";
-import type { ManagedSkill, ProjectSkill } from "../lib/tauri";
-import { getErrorMessage } from "../lib/error";
+import type { ManagedSkill, ProjectSkill } from "../lib/tauri";import { getErrorMessage } from "../lib/error";
 import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTags";
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
 import { Button } from "../components/ui/Button";
@@ -122,6 +122,7 @@ function WorkspaceSkillCard({
   tags = [],
   status,
   fileCount = 0,
+  usageCount = 0,
   active = false,
   isBroken = false,
   sourceBadge,
@@ -139,6 +140,8 @@ function WorkspaceSkillCard({
   tags?: WorkspaceSkillCardTag[];
   status: WorkspaceSkillCardStatus;
   fileCount?: number;
+  /** How many times this skill was triggered under the current agent (0 = hide). */
+  usageCount?: number;
   active?: boolean;
   isBroken?: boolean;
   /** Optional chip marking which non-primary scan dir this skill lives in. */
@@ -154,6 +157,17 @@ function WorkspaceSkillCard({
   actionsHover?: boolean;
   onClick?: () => void;
 }) {
+  const { t } = useTranslation();
+  const usageBadge =
+    usageCount > 0 ? (
+      <span
+        className="flex shrink-0 items-center gap-1 text-[12px] text-faint"
+        title={t("mySkills.usage.count", { count: usageCount })}
+      >
+        <Zap className="h-3 w-3" />
+        {usageCount}
+      </span>
+    ) : null;
   if (viewMode === "list") {
     return (
       <SkillCardShell
@@ -225,6 +239,7 @@ function WorkspaceSkillCard({
         )}
         <div className="flex shrink-0 items-center gap-2.5">
           <StatusPill className={status.className}>{status.label}</StatusPill>
+          {usageBadge}
           {fileCount > 0 && (
             <span className="flex items-center gap-1 text-[12px] text-faint">
               <FileText className="h-3 w-3" />
@@ -307,6 +322,7 @@ function WorkspaceSkillCard({
             {sourceBadge.label}
           </button>
         )}
+        {usageBadge}
         {fileCount > 0 && (
           <span className="flex shrink-0 items-center gap-1 text-[12px] text-faint">
             <FileText className="h-3 w-3" />
@@ -419,6 +435,33 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const [pullConfirmSkill, setPullConfirmSkill] = useState<ProjectSkill | null>(null);
   const [deleteLocalConfirmSkill, setDeleteLocalConfirmSkill] = useState<ProjectSkill | null>(null);
   const localDetailRequestRef = useRef(0);
+  // Trigger counts for the current agent, keyed by skill name. Option X: show
+  // how many times each skill fired *under this agent*, not the global total.
+  const [usageCountByName, setUsageCountByName] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!agentKey) {
+      setUsageCountByName({});
+      return;
+    }
+    let cancelled = false;
+    api.getSkillUsageStats()
+      .then((stats) => {
+        if (cancelled) return;
+        const byName: Record<string, number> = {};
+        for (const stat of stats) {
+          const forAgent = stat.agents.find((a) => a.agent === agentKey);
+          if (forAgent && forAgent.count > 0) byName[stat.skill_name] = forAgent.count;
+        }
+        setUsageCountByName(byName);
+      })
+      .catch(() => {
+        if (!cancelled) setUsageCountByName({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agentKey]);
 
   // Cross-category redirect: a deep link like /global-workspace/openclaw should
   // land on /personal-workspace/openclaw. Compute it before any filtering so a
@@ -1439,6 +1482,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 tags={skill.tags.map((tag) => ({ label: tag, className: getTagColor(tag, allLocalTags) }))}
                 status={statusMeta}
                 fileCount={skill.files.length}
+                usageCount={usageCountByName[skill.name] ?? 0}
                 active={isManaged}
                 isBroken={isBroken}
                 sourceBadge={sourceBadge}

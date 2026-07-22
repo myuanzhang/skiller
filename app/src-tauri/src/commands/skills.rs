@@ -74,7 +74,15 @@ pub struct SkillUsageStatDto {
     pub skill_name: String,
     pub count: u64,
     pub last_used_at: Option<i64>,
-    pub agents: Vec<String>,
+    pub agents: Vec<SkillUsageAgentStatDto>,
+}
+
+/// Per-agent breakdown of a skill's triggers.
+#[derive(Debug, Clone, Serialize)]
+pub struct SkillUsageAgentStatDto {
+    pub agent: String,
+    pub count: u64,
+    pub last_used_at: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1513,8 +1521,20 @@ fn add_usage_event(
         }
     }
     if let Some(agent) = agent.filter(|s| !s.trim().is_empty()) {
-        if !stat.agents.iter().any(|existing| existing == &agent) {
-            stat.agents.push(agent);
+        match stat.agents.iter_mut().find(|existing| existing.agent == agent) {
+            Some(existing) => {
+                existing.count = existing.count.saturating_add(count);
+                if let Some(ts) = last_used_at {
+                    if existing.last_used_at.map(|current| ts > current).unwrap_or(true) {
+                        existing.last_used_at = Some(ts);
+                    }
+                }
+            }
+            None => stat.agents.push(SkillUsageAgentStatDto {
+                agent,
+                count,
+                last_used_at,
+            }),
         }
     }
 }
@@ -1574,6 +1594,58 @@ fn collect_usage_json(path: &Path, usage: &mut HashMap<String, SkillUsageStatDto
     }
 }
 
+/// Parse TRAE CLI session logs under `<trae_cli>/sessions/**/*.jsonl` and count
+/// each `Skill` tool trigger. A trigger is one line whose `payload` is a
+/// `function_call` named `Skill`; the triggered skill's name is read from the
+/// JSON-encoded `arguments.skill`. Slash-command markers are deliberately
+/// ignored — a `/skill` invocation also emits a `Skill` call, so counting both
+/// would double-count. Malformed lines are skipped.
+fn collect_usage_trae(trae_cli_dir: &Path, usage: &mut HashMap<String, SkillUsageStatDto>) {
+    let sessions_dir = trae_cli_dir.join("sessions");
+    if !sessions_dir.is_dir() {
+        return;
+    }
+    for entry in WalkDir::new(&sessions_dir).into_iter().filter_map(Result::ok) {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("jsonl") {
+            continue;
+        }
+        let Ok(content) = std::fs::read_to_string(path) else {
+            continue;
+        };
+        for line in content.lines().map(str::trim).filter(|line| !line.is_empty()) {
+            let Ok(value) = serde_json::from_str::<Value>(line) else {
+                continue;
+            };
+            let Some(skill_name) = trae_skill_call_name(&value) else {
+                continue;
+            };
+            let last_used_at = value.get("timestamp").and_then(value_as_i64);
+            add_usage_event(usage, skill_name, 1, last_used_at, Some("trae".to_string()));
+        }
+    }
+}
+
+/// Return the triggered skill name if `value` is a TRAE `Skill` tool call line,
+/// otherwise `None`.
+fn trae_skill_call_name(value: &Value) -> Option<String> {
+    let payload = value.get("payload")?;
+    if payload.get("type").and_then(Value::as_str) != Some("function_call") {
+        return None;
+    }
+    if payload.get("name").and_then(Value::as_str) != Some("Skill") {
+        return None;
+    }
+    let arguments = payload.get("arguments").and_then(Value::as_str)?;
+    let parsed = serde_json::from_str::<Value>(arguments).ok()?;
+    parsed
+        .get("skill")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(ToString::to_string)
+}
+
 fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
     let mut usage: HashMap<String, SkillUsageStatDto> = HashMap::new();
 
@@ -1592,11 +1664,12 @@ fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
         if claude_stats.is_file() {
             collect_usage_json(&claude_stats, &mut usage);
         }
+        collect_usage_trae(&home.join(".trae").join("cli"), &mut usage);
     }
 
     let mut stats: Vec<_> = usage.into_values().collect();
     for stat in &mut stats {
-        stat.agents.sort();
+        stat.agents.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.agent.cmp(&b.agent)));
     }
     stats.sort_by(|a, b| {
         b.last_used_at
@@ -2801,5 +2874,40 @@ mod tests {
         assert_ne!(k_a, k_b);
         assert_eq!(k_a, "category-a/foo");
         assert_eq!(k_b, "category-b/foo");
+    }
+
+    #[test]
+    fn collect_usage_trae_counts_skill_calls_and_tracks_latest() {
+        // A TRAE session log: each line is one event. Skill triggers appear as
+        // response_item -> payload {type:function_call, name:"Skill"} with the
+        // triggered skill in arguments.skill. Non-Skill calls are ignored.
+        let tmp = tempdir().unwrap();
+        let sessions = tmp.path().join("sessions/2026/07/03");
+        fs::create_dir_all(&sessions).unwrap();
+        let log = sessions.join("rollout.jsonl");
+        let lines = [
+            r#"{"type":"response_item","timestamp":"2026-07-03T10:01:44.064Z","payload":{"type":"function_call","name":"Skill","arguments":"{\"skill\":\"critical-ai-writer\",\"args\":\"x\"}"}}"#,
+            r#"{"type":"response_item","timestamp":"2026-07-04T11:00:00.000Z","payload":{"type":"function_call","name":"Skill","arguments":"{\"skill\":\"critical-ai-writer\"}"}}"#,
+            r#"{"type":"response_item","timestamp":"2026-07-02T09:00:00.000Z","payload":{"type":"function_call","name":"Bash","arguments":"{}"}}"#,
+            r#"{"type":"response_item","timestamp":"2026-07-03T12:00:00.000Z","payload":{"type":"function_call","name":"Skill","arguments":"{\"skill\":\"topic-strategy\"}"}}"#,
+            "",
+            "not-json",
+        ];
+        fs::write(&log, lines.join("\n")).unwrap();
+
+        let mut usage: HashMap<String, SkillUsageStatDto> = HashMap::new();
+        collect_usage_trae(tmp.path(), &mut usage);
+
+        let writer = usage.get("critical-ai-writer").expect("writer counted");
+        assert_eq!(writer.count, 2, "two Skill calls for the writer");
+        // Latest of the two timestamps wins (2026-07-04 in millis).
+        assert_eq!(writer.last_used_at, Some(1_783_162_800_000));
+        assert_eq!(writer.agents.len(), 1);
+        assert_eq!(writer.agents[0].agent, "trae");
+        assert_eq!(writer.agents[0].count, 2, "per-agent count for trae");
+        assert_eq!(writer.agents[0].last_used_at, Some(1_783_162_800_000));
+
+        assert_eq!(usage.get("topic-strategy").map(|s| s.count), Some(1));
+        assert!(!usage.contains_key("Bash"), "non-Skill calls ignored");
     }
 }

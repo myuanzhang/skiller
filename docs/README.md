@@ -15,6 +15,7 @@ updated: 2026-07-15
 
 - [协作/会话交接说明.md](协作/会话交接说明.md) —— 新会话接手 Agent/Skill 开发前必读：项目规矩、多目录架构、踩坑、代码速查。
 - [协作/交接Prompt.md](协作/交接Prompt.md) —— 每次会话交接时复制即用的 Prompt。
+- [协作/Git-Worktree并行开发指南.md](协作/Git-Worktree并行开发指南.md) —— 同一仓库并行开发多个功能或 Bug 的隔离工作区操作手册。
 
 ## 架构（现行机制说明）
 
@@ -23,6 +24,11 @@ updated: 2026-07-15
 - [架构/中央仓库与同步状态.md](架构/中央仓库与同步状态.md) —— 技能中心（中央仓库）作用与各同步状态标签的判定。
 - [架构/技能目录自动发现与清理机制.md](架构/技能目录自动发现与清理机制.md) —— 孤儿发现 / 缺失清理 / 文件监视对账。
 - [架构/个人助手区域分析.md](架构/个人助手区域分析.md) —— coding vs personal 两大分类；Personal Agents 区域设计。
+- [架构/技能触发次数统计机制.md](架构/技能触发次数统计机制.md) —— 触发次数角标的数据源（TRAE session 解析）、口径与「解析 vs 埋点上报」决策。
+
+## 决策记录（ADR）
+
+- [adr/0001-skill-usage-from-trae-sessions.md](adr/0001-skill-usage-from-trae-sessions.md) —— 触发次数统计选择解析 TRAE session 日志、而非 agent 埋点上报。
 
 ## 环境
 

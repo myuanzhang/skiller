@@ -84,7 +84,7 @@ export function SkillListCard({
     ? [
         t("mySkills.usage.count", { count: usage.count }),
         usage.last_used_at ? t("mySkills.usage.lastUsed", { time: new Date(usage.last_used_at).toLocaleString() }) : null,
-        usage.agents.length > 0 ? usage.agents.join(", ") : null,
+        usage.agents.length > 0 ? usage.agents.map((a) => `${a.agent}: ${a.count}`).join(", ") : null,
       ].filter(Boolean).join(" · ")
     : "";
 

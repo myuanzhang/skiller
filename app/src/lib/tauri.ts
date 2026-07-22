@@ -60,7 +60,13 @@ export interface SkillUsageStat {
   skill_name: string;
   count: number;
   last_used_at: number | null;
-  agents: string[];
+  agents: SkillUsageAgentStat[];
+}
+
+export interface SkillUsageAgentStat {
+  agent: string;
+  count: number;
+  last_used_at: number | null;
 }
 
 export interface SkillToolToggle {
