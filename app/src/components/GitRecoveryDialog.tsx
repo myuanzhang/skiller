@@ -48,7 +48,7 @@ export function GitRecoveryDialog({ open, reason, onClose, onReclone }: Props) {
       open={open}
       onClose={onClose}
       closeOnBackdrop={!loading}
-      contentClassName="bg-surface border border-border rounded-panel w-full max-w-lg p-5 shadow-2xl"
+      contentClassName="bg-surface border border-border rounded-panel w-full max-w-lg p-5 app-floating-edge"
     >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>

@@ -20,7 +20,7 @@ export function HelpDialog() {
               <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-faint">
                 {t("help.eyebrow")}
               </p>
-              <h2 className="mt-2 text-[20px] font-semibold text-primary">{t("help.title")}</h2>
+              <h2 className="mt-2 text-[20px] font-semibold tracking-[-0.015em] text-primary">{t("help.title")}</h2>
               <p className="mt-1 text-[13px] text-muted">{t("help.description")}</p>
             </div>
             <button

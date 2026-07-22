@@ -261,7 +261,7 @@ export function CommandPalette() {
                   close();
                 }}
                 className={cn(
-                  "flex cursor-pointer items-center gap-3 px-4 py-2 text-[13px]",
+                  "flex cursor-pointer items-center gap-3 px-4 py-2 text-[13px] transition-colors duration-100 ease-out active:bg-surface-active",
                   active ? "bg-surface-hover" : "hover:bg-surface-hover/60",
                 )}
               >
@@ -308,7 +308,7 @@ export function CommandPalette() {
       <div
         role="dialog"
         aria-label="Command palette"
-        className="w-[min(640px,92vw)] overflow-hidden rounded-panel border border-border-subtle bg-surface shadow-2xl"
+        className="w-[min(640px,92vw)] overflow-hidden rounded-panel border border-border-subtle bg-surface app-floating-edge"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >

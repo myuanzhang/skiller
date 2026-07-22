@@ -89,7 +89,7 @@ export function BatchTagDialog({ open, skills, allTags, onClose, onApply }: Prop
     <Modal
       open={open}
       onClose={onClose}
-      contentClassName="bg-surface border border-border rounded-panel w-full max-w-[440px] p-5 shadow-2xl"
+      contentClassName="bg-surface border border-border rounded-panel w-full max-w-[440px] p-5 app-floating-edge"
     >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[13px] font-semibold text-primary flex items-center gap-2">

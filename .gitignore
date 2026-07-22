@@ -25,6 +25,7 @@ logs/
 .idea/
 .DS_Store
 *.sw?
+*.bak
 
 # Local runtime data
 *.local

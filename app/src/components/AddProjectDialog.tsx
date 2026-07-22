@@ -121,7 +121,7 @@ export function AddProjectDialog({ open, onClose, onAdded }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface border border-border rounded-panel w-full max-w-[480px] p-5 shadow-2xl">
+      <div className="relative bg-surface border border-border rounded-panel w-full max-w-[480px] p-5 app-floating-edge">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[13px] font-semibold text-primary">
             {t("project.addProjectTitle")}

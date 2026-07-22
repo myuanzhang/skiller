@@ -44,7 +44,7 @@ export function DetailSheet({
         {onBack ? (
           <button
             onClick={onBack}
-            className="absolute top-4 left-5 z-10 flex shrink-0 items-center gap-1 rounded-control py-1.5 pr-2.5 pl-1.5 text-[13px] font-medium text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary"
+            className="absolute top-4 left-5 z-10 flex shrink-0 items-center gap-1 rounded-control py-1.5 pr-2.5 pl-1.5 text-[13px] font-medium text-muted transition-[background-color,color,scale] duration-150 ease-out outline-none hover:bg-surface-hover hover:text-secondary active:scale-[0.96]"
           >
             <ArrowLeft className="h-4 w-4" />
             {backLabel ?? "Back"}
@@ -52,7 +52,7 @@ export function DetailSheet({
         ) : null}
         <button
           onClick={onClose}
-          className="absolute top-4 right-5 z-10 shrink-0 rounded-control p-1.5 text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary"
+          className="absolute top-4 right-5 z-10 shrink-0 rounded-control p-1.5 text-muted transition-[background-color,color,scale] duration-150 ease-out outline-none hover:bg-surface-hover hover:text-secondary active:scale-[0.9]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -61,7 +61,7 @@ export function DetailSheet({
             onBack ? "pt-14" : "pt-5"
           }`}
         >
-          <h2 className="mb-3 min-w-0 pr-10 text-[28px] font-semibold leading-tight tracking-tight text-primary">
+          <h2 className="mb-3 min-w-0 pr-10 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-primary">
             <span className="block">{title}</span>
           </h2>
           {description ? (

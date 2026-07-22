@@ -43,6 +43,9 @@
     --shadow-card: 0 1px 2px rgba(24,24,27,0.04), 0 1px 3px rgba(24,24,27,0.06);
     --shadow-popover: 0 4px 12px rgba(24,24,27,0.10), 0 2px 4px rgba(24,24,27,0.06);
     --shadow-modal: 0 24px 48px rgba(24,24,27,0.18), 0 8px 16px rgba(24,24,27,0.10);
+    /* Top light-edge for floating chrome (popover/command palette/modal): a
+     * hairline highlight where light catches the material's top edge. */
+    --edge-highlight: inset 0 1px 0 0 rgba(255,255,255,0.55);
     /* Shadow-as-border: three layers act as a 1px ring + subtle lift + ambient
      * depth, so cards read as elevated surfaces without a hard border line. */
     --shadow-border:
@@ -89,6 +92,9 @@
     --shadow-card: 0 1px 2px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.40);
     --shadow-popover: 0 4px 14px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.35);
     --shadow-modal: 0 28px 56px rgba(0,0,0,0.60), 0 10px 20px rgba(0,0,0,0.45);
+    /* Dark mode: a fainter top highlight — a bright edge would look artificial
+     * on near-black surfaces. */
+    --edge-highlight: inset 0 1px 0 0 rgba(255,255,255,0.08);
     /* Dark mode: a single white ring — layered depth shadows aren't visible on
      * dark backgrounds. */
     --shadow-border: 0 0 0 1px rgba(255,255,255,0.08);
@@ -187,7 +193,7 @@
   }
 
   .app-page-title {
-    @apply text-[17px] font-semibold tracking-tight text-primary;
+    @apply text-[17px] font-semibold tracking-[-0.01em] text-primary;
   }
 
   .app-page-subtitle {
@@ -205,6 +211,13 @@
 
   .app-panel-muted {
     @apply rounded-panel border border-border-subtle bg-bg-secondary;
+  }
+
+  /* Floating chrome (command palette, modal card): pairs the material's own
+   * shadow with a hairline top highlight so it reads as a raised glass surface
+   * catching light, not a flat rectangle. Compose after a shadow utility. */
+  .app-floating-edge {
+    box-shadow: var(--edge-highlight), var(--shadow-modal);
   }
 
   .app-toolbar {

@@ -26,19 +26,19 @@ export function SkillMarkdown({ content, className }: SkillMarkdownProps) {
         components={{
           h1: ({ className, ...props }) => (
             <h1
-              className={cn("mb-4 text-[28px] font-semibold leading-tight text-primary", className)}
+              className={cn("mb-4 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-primary", className)}
               {...props}
             />
           ),
           h2: ({ className, ...props }) => (
             <h2
-              className={cn("mb-3 mt-8 text-[20px] font-semibold leading-tight text-primary", className)}
+              className={cn("mb-3 mt-8 text-[20px] font-semibold leading-tight tracking-[-0.015em] text-primary", className)}
               {...props}
             />
           ),
           h3: ({ className, ...props }) => (
             <h3
-              className={cn("mb-2 mt-6 text-[16px] font-semibold leading-tight text-primary", className)}
+              className={cn("mb-2 mt-6 text-[16px] font-semibold leading-tight tracking-[-0.01em] text-primary", className)}
               {...props}
             />
           ),
