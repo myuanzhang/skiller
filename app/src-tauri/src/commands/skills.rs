@@ -74,7 +74,15 @@ pub struct SkillUsageStatDto {
     pub skill_name: String,
     pub count: u64,
     pub last_used_at: Option<i64>,
-    pub agents: Vec<String>,
+    pub agents: Vec<SkillUsageAgentStatDto>,
+}
+
+/// Per-agent breakdown of a skill's triggers.
+#[derive(Debug, Clone, Serialize)]
+pub struct SkillUsageAgentStatDto {
+    pub agent: String,
+    pub count: u64,
+    pub last_used_at: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1513,8 +1521,20 @@ fn add_usage_event(
         }
     }
     if let Some(agent) = agent.filter(|s| !s.trim().is_empty()) {
-        if !stat.agents.iter().any(|existing| existing == &agent) {
-            stat.agents.push(agent);
+        match stat.agents.iter_mut().find(|existing| existing.agent == agent) {
+            Some(existing) => {
+                existing.count = existing.count.saturating_add(count);
+                if let Some(ts) = last_used_at {
+                    if existing.last_used_at.map(|current| ts > current).unwrap_or(true) {
+                        existing.last_used_at = Some(ts);
+                    }
+                }
+            }
+            None => stat.agents.push(SkillUsageAgentStatDto {
+                agent,
+                count,
+                last_used_at,
+            }),
         }
     }
 }
@@ -1649,7 +1669,7 @@ fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
 
     let mut stats: Vec<_> = usage.into_values().collect();
     for stat in &mut stats {
-        stat.agents.sort();
+        stat.agents.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.agent.cmp(&b.agent)));
     }
     stats.sort_by(|a, b| {
         b.last_used_at
@@ -2882,7 +2902,10 @@ mod tests {
         assert_eq!(writer.count, 2, "two Skill calls for the writer");
         // Latest of the two timestamps wins (2026-07-04 in millis).
         assert_eq!(writer.last_used_at, Some(1_783_162_800_000));
-        assert_eq!(writer.agents, vec!["trae".to_string()]);
+        assert_eq!(writer.agents.len(), 1);
+        assert_eq!(writer.agents[0].agent, "trae");
+        assert_eq!(writer.agents[0].count, 2, "per-agent count for trae");
+        assert_eq!(writer.agents[0].last_used_at, Some(1_783_162_800_000));
 
         assert_eq!(usage.get("topic-strategy").map(|s| s.count), Some(1));
         assert!(!usage.contains_key("Bash"), "non-Skill calls ignored");
