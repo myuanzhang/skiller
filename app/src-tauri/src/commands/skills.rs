@@ -2014,7 +2014,15 @@ pub fn check_skill_update_internal(
                 Ok(remote_revision) => {
                     let update_status = match skill.source_revision.as_deref() {
                         Some(current) if current == remote_revision => "up_to_date",
-                        Some(_) => "update_available",
+                        Some(_) => {
+                            let content_changed =
+                                remote_skill_content_changed(&skill, &git_source, &remote_revision, proxy_url);
+                            if content_changed {
+                                "update_available"
+                            } else {
+                                "up_to_date"
+                            }
+                        }
                         None => "unknown",
                     };
                     store
@@ -2025,6 +2033,22 @@ pub fn check_skill_update_internal(
                             None,
                         )
                         .map_err(AppError::db)?;
+                    if update_status == "up_to_date"
+                        && skill.source_revision.as_deref() != Some(remote_revision.as_str())
+                    {
+                        // Content unchanged (e.g. monorepo commit didn't touch
+                        // this skill's subpath) — bump source_revision so we
+                        // don't re-clone on every future check.
+                        store
+                            .update_skill_source_metadata(
+                                &skill.id,
+                                Some(&git_source.clone_url),
+                                git_source.subpath.as_deref(),
+                                git_source.branch.as_deref(),
+                                Some(&remote_revision),
+                            )
+                            .map_err(AppError::db)?;
+                    }
                 }
                 Err(err) => {
                     let message = err.to_string();
@@ -2103,6 +2127,51 @@ fn should_skip_update_check(
             .last_checked_at
             .map(|checked| chrono::Utc::now().timestamp_millis() - checked < ttl_ms)
             .unwrap_or(false))
+}
+
+fn remote_skill_content_changed(
+    skill: &SkillRecord,
+    git_source: &GitSkillSource,
+    remote_revision: &str,
+    proxy_url: Option<&str>,
+) -> bool {
+    let temp_dir = match git_fetcher::clone_repo_ref(
+        &git_source.clone_url,
+        git_source.branch.as_deref(),
+        None,
+        proxy_url,
+    ) {
+        Ok(dir) => dir,
+        Err(err) => {
+            log::warn!(
+                "update check: failed to clone {} for content hash comparison: {err}",
+                git_source.clone_url
+            );
+            return true;
+        }
+    };
+    let result = (|| -> Result<bool, AppError> {
+        git_fetcher::checkout_revision(&temp_dir, remote_revision).map_err(AppError::git)?;
+        let skill_dir = resolve_skill_dir(
+            &temp_dir,
+            git_source.subpath.as_deref(),
+            git_source.locator_skill_id.as_deref(),
+        )?;
+        let new_hash = crate::core::content_hash::hash_directory(&skill_dir)
+            .map_err(AppError::io)?;
+        Ok(skill.content_hash.as_deref() != Some(new_hash.as_str()))
+    })();
+    git_fetcher::cleanup_temp(&temp_dir);
+    match result {
+        Ok(changed) => changed,
+        Err(err) => {
+            log::warn!(
+                "update check: failed to hash remote skill content for {}: {err}",
+                skill.id
+            );
+            true
+        }
+    }
 }
 
 pub fn git_source_from_skill(skill: &SkillRecord) -> Result<GitSkillSource, AppError> {

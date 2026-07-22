@@ -102,7 +102,7 @@ export function SkillCardActions({
           >
             <RefreshCw className={cn("h-3.5 w-3.5", checking && "animate-spin")} />
           </button>
-          {canRefresh ? (
+          {canRefresh && skill.update_status === "update_available" ? (
             <button
               onClick={(e) => { e.stopPropagation(); onRefreshSkill(skill); }}
               disabled={updating}
