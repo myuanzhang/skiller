@@ -1,4 +1,4 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../utils";
 import type { GitBackupVersion } from "../../lib/tauri";
@@ -9,8 +9,11 @@ interface GitSnapshotPanelProps {
   loading: boolean;
   gitBusy: boolean;
   restoringVersionTag: string | null;
+  deletingVersionTag: string | null;
+  currentSnapshotTag: string | null;
   onRefresh: () => void;
   onRestoreVersion: (tag: string) => void;
+  onDeleteVersion: (tag: string) => void;
   displaySnapshotLabel: (tag: string) => string;
   formatGitDateTime: (iso: string) => string;
 }
@@ -21,12 +24,16 @@ export function GitSnapshotPanel({
   loading,
   gitBusy,
   restoringVersionTag,
+  deletingVersionTag,
+  currentSnapshotTag,
   onRefresh,
   onRestoreVersion,
+  onDeleteVersion,
   displaySnapshotLabel,
   formatGitDateTime,
 }: GitSnapshotPanelProps) {
   const { t } = useTranslation();
+  const busy = !!restoringVersionTag || !!deletingVersionTag;
 
   return (
     <div className="app-panel -mt-2 mb-2 p-3">
@@ -64,15 +71,31 @@ export function GitSnapshotPanel({
                   {version.commit} · {formatGitDateTime(version.committed_at)}
                 </div>
               </div>
-              <button
-                onClick={() => onRestoreVersion(version.tag)}
-                disabled={!!restoringVersionTag}
-                className="shrink-0 rounded-md border border-border-subtle px-2 py-1 text-[12px] font-medium text-secondary hover:bg-surface-hover disabled:opacity-50"
-              >
-                {restoringVersionTag === version.tag
-                  ? t("mySkills.gitVersionRestoring")
-                  : t("mySkills.gitVersionRestore")}
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  onClick={() => onRestoreVersion(version.tag)}
+                  disabled={busy}
+                  className="rounded-md border border-border-subtle px-2 py-1 text-[12px] font-medium text-secondary hover:bg-surface-hover disabled:opacity-50"
+                >
+                  {restoringVersionTag === version.tag
+                    ? t("mySkills.gitVersionRestoring")
+                    : t("mySkills.gitVersionRestore")}
+                </button>
+                {version.tag !== currentSnapshotTag && (
+                  <button
+                    onClick={() => onDeleteVersion(version.tag)}
+                    disabled={busy}
+                    title={t("mySkills.gitVersionDelete")}
+                    className="inline-flex items-center gap-1 rounded-md border border-border-subtle px-2 py-1 text-[12px] font-medium text-muted hover:border-danger hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+                  >
+                    {deletingVersionTag === version.tag ? (
+                      t("mySkills.gitVersionDeleting")
+                    ) : (
+                      <Trash2 className="h-3 w-3" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { Trash2, CheckCircle2, Circle, RotateCcw, Tag, Download, Upload } from "lucide-react";
+import { Trash2, CheckCircle2, Circle, RotateCcw, Tag, Download, Upload, Unlink } from "lucide-react";
 import { cn } from "../utils";
 import { Button } from "./ui/Button";
 
@@ -9,6 +9,7 @@ interface MultiSelectToolbarLabels {
   updateProject?: string;
   updateCenter?: string;
   delete: string;
+  remove?: string;
   enable: string;
   disable: string;
   selectAll: string;
@@ -24,15 +25,19 @@ interface MultiSelectToolbarProps {
   anyUpdatable?: boolean;
   anyCanUpdateProject?: boolean;
   anyCanUpdateCenter?: boolean;
+  anyRemovable?: boolean;
   showToggle: boolean;
   updating?: boolean;
   updatingProject?: boolean;
   updatingCenter?: boolean;
+  removing?: boolean;
+  deleting?: boolean;
   labels: MultiSelectToolbarLabels;
   onUpdate?: () => void;
   onUpdateProject?: () => void;
   onUpdateCenter?: () => void;
   onDelete: () => void;
+  onRemove?: () => void;
   onToggle: () => void;
   onSelectAll: () => void;
   onCancel: () => void;
@@ -46,15 +51,19 @@ export function MultiSelectToolbar({
   anyUpdatable = false,
   anyCanUpdateProject = false,
   anyCanUpdateCenter = false,
+  anyRemovable = false,
   showToggle,
   updating = false,
   updatingProject = false,
   updatingCenter = false,
+  removing = false,
+  deleting = false,
   labels,
   onUpdate,
   onUpdateProject,
   onUpdateCenter,
   onDelete,
+  onRemove,
   onToggle,
   onSelectAll,
   onCancel,
@@ -110,11 +119,23 @@ export function MultiSelectToolbar({
               {labels.editTags}
             </Button>
           )}
+          {anyRemovable && labels.remove && onRemove && (
+            <Button
+              size="sm"
+              onClick={onRemove}
+              disabled={removing}
+              className="bg-amber-600/90 py-1 text-white hover:bg-amber-500"
+              icon={<Unlink className={cn("h-3.5 w-3.5", removing && "animate-spin")} />}
+            >
+              {labels.remove}
+            </Button>
+          )}
           <Button
             size="sm"
             onClick={onDelete}
+            disabled={deleting}
             className="bg-red-600/90 py-1 text-white hover:bg-red-500"
-            icon={<Trash2 className="h-3.5 w-3.5" />}
+            icon={<Trash2 className={cn("h-3.5 w-3.5", deleting && "animate-spin")} />}
           >
             {labels.delete}
           </Button>

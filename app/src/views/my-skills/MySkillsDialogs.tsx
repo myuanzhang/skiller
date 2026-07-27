@@ -23,6 +23,7 @@ interface MySkillsDialogsProps {
   selectedSkills: ManagedSkill[];
   allTags: string[];
   restoreVersionTag: string | null;
+  deleteVersionTag: string | null;
   setupOpen: boolean;
   hasGitRemote: boolean;
   recoveryOpen: boolean;
@@ -41,6 +42,8 @@ interface MySkillsDialogsProps {
   onApplyBatchTags: (adds: string[], removes: string[]) => Promise<void>;
   onCloseRestoreVersion: () => void;
   onConfirmRestoreVersion: () => Promise<void>;
+  onCloseDeleteVersion: () => void;
+  onConfirmDeleteVersion: () => Promise<void>;
   onCloseSetup: () => void;
   onSetupClone: () => Promise<void>;
   onSetupInit: () => Promise<void>;
@@ -58,6 +61,7 @@ export function MySkillsDialogs({
   selectedSkills,
   allTags,
   restoreVersionTag,
+  deleteVersionTag,
   setupOpen,
   hasGitRemote,
   recoveryOpen,
@@ -76,6 +80,8 @@ export function MySkillsDialogs({
   onApplyBatchTags,
   onCloseRestoreVersion,
   onConfirmRestoreVersion,
+  onCloseDeleteVersion,
+  onConfirmDeleteVersion,
   onCloseSetup,
   onSetupClone,
   onSetupInit,
@@ -128,6 +134,15 @@ export function MySkillsDialogs({
         confirmLabel={t("mySkills.gitVersionRestore")}
         onClose={onCloseRestoreVersion}
         onConfirm={onConfirmRestoreVersion}
+      />
+      <ConfirmDialog
+        open={deleteVersionTag !== null}
+        title={t("mySkills.gitVersionDeleteTitle")}
+        message={t("mySkills.gitVersionDeleteConfirm", { tag: displaySnapshotLabel(deleteVersionTag || "") })}
+        tone="danger"
+        confirmLabel={t("mySkills.gitVersionDelete")}
+        onClose={onCloseDeleteVersion}
+        onConfirm={onConfirmDeleteVersion}
       />
       <GitSetupDialog
         open={setupOpen}

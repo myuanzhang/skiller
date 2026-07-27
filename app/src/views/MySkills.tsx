@@ -161,6 +161,8 @@ export function MySkills() {
   const [gitVersions, setGitVersions] = useState<GitBackupVersion[]>([]);
   const [restoreVersionTag, setRestoreVersionTag] = useState<string | null>(null);
   const [restoringVersionTag, setRestoringVersionTag] = useState<string | null>(null);
+  const [deleteVersionTag, setDeleteVersionTag] = useState<string | null>(null);
+  const [deletingVersionTag, setDeletingVersionTag] = useState<string | null>(null);
   const [setupOpen, setSetupOpen] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   // What the recovery dialog should explain. A merge conflict is not an
@@ -1057,6 +1059,21 @@ export function MySkills() {
     }
   };
 
+  const handleDeleteVersion = async () => {
+    if (!deleteVersionTag) return;
+    setDeletingVersionTag(deleteVersionTag);
+    try {
+      await api.gitBackupDeleteVersion(deleteVersionTag);
+      toast.success(t("mySkills.gitVersionDeleteSuccess", { tag: displaySnapshotLabel(deleteVersionTag) }));
+      await Promise.all([refreshGitStatus(), refreshGitVersions()]);
+      setDeleteVersionTag(null);
+    } catch (error: unknown) {
+      toast.error(mapGitError(error));
+    } finally {
+      setDeletingVersionTag(null);
+    }
+  };
+
   const getGitToolbarMode = (): GitToolbarMode => {
     if (!gitStatus) return "loading";
     if (!gitStatus.is_repo) return "uninitialized";
@@ -1375,8 +1392,11 @@ export function MySkills() {
           loading={gitVersionsLoading}
           gitBusy={!!gitLoading}
           restoringVersionTag={restoringVersionTag}
+          deletingVersionTag={deletingVersionTag}
+          currentSnapshotTag={gitStatus?.current_snapshot_tag ?? null}
           onRefresh={refreshGitVersions}
           onRestoreVersion={setRestoreVersionTag}
+          onDeleteVersion={setDeleteVersionTag}
           displaySnapshotLabel={displaySnapshotLabel}
           formatGitDateTime={formatGitDateTime}
         />
@@ -1536,6 +1556,7 @@ export function MySkills() {
         selectedSkills={skills.filter((s) => selectedIds.has(s.id))}
         allTags={allTags}
         restoreVersionTag={restoreVersionTag}
+        deleteVersionTag={deleteVersionTag}
         setupOpen={setupOpen}
         hasGitRemote={!!gitRemoteConfig}
         recoveryOpen={recoveryOpen}
@@ -1560,6 +1581,8 @@ export function MySkills() {
         onApplyBatchTags={handleBatchEditTags}
         onCloseRestoreVersion={() => setRestoreVersionTag(null)}
         onConfirmRestoreVersion={handleRestoreVersion}
+        onCloseDeleteVersion={() => setDeleteVersionTag(null)}
+        onConfirmDeleteVersion={handleDeleteVersion}
         onCloseSetup={() => setSetupOpen(false)}
         onSetupClone={handleSetupClone}
         onSetupInit={handleSetupInit}

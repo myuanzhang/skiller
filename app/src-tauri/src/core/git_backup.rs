@@ -542,6 +542,50 @@ pub(crate) fn restore_snapshot_version_unlocked(skills_dir: &Path, tag: &str) ->
     }
 }
 
+/// Delete a snapshot tag locally and (best-effort) on the remote.
+#[allow(dead_code)]
+pub fn delete_snapshot_version(skills_dir: &Path, tag: &str) -> Result<()> {
+    let _lock = RepoLock::acquire_foreground("git delete snapshot")?;
+    delete_snapshot_version_unlocked(skills_dir, tag)
+}
+
+pub(crate) fn delete_snapshot_version_unlocked(skills_dir: &Path, tag: &str) -> Result<()> {
+    ensure_repo(skills_dir)?;
+
+    // Guard the prefix so this can never delete a user's own release tags.
+    if !tag.starts_with("sm-v-") {
+        anyhow::bail!("Invalid snapshot tag");
+    }
+
+    // Refuse to delete the snapshot that HEAD currently sits on: it is the
+    // library's current state, and dropping its tag would orphan the label the
+    // status bar shows as "current version".
+    let on_head = run_git(skills_dir, &["tag", "--points-at", "HEAD", "--list", tag])
+        .unwrap_or_default();
+    if !on_head.trim().is_empty() {
+        anyhow::bail!("Cannot delete the snapshot at the current version");
+    }
+
+    // Delete on the remote first when origin exists and actually has this tag.
+    // Doing remote-first means a network/auth failure leaves the local tag in
+    // place, so the version stays visible and the delete can be retried rather
+    // than silently half-applied.
+    if run_git(skills_dir, &["remote", "get-url", "origin"]).is_ok() {
+        let remote_has_tag =
+            run_git(skills_dir, &["ls-remote", "--tags", "--refs", "origin", tag])
+                .map(|out| !out.trim().is_empty())
+                .unwrap_or(false);
+        if remote_has_tag {
+            run_git_checked(skills_dir, &["push", "origin", &format!(":refs/tags/{tag}")])?;
+            log::info!("git delete snapshot: removed remote tag {tag}");
+        }
+    }
+
+    run_git_checked(skills_dir, &["tag", "-d", tag])?;
+    log::info!("git delete snapshot: removed local tag {tag}");
+    Ok(())
+}
+
 /// Clone a remote repository into the skills directory.
 /// The skills directory must be empty or non-existent.
 #[allow(dead_code)]
@@ -1292,5 +1336,59 @@ mod tests {
             msg.contains("file, not a directory"),
             "unexpected message: {msg}"
         );
+    }
+
+    // ── delete_snapshot_version ──
+
+    #[test]
+    fn delete_snapshot_removes_local_tag_and_rejects_current_and_foreign() {
+        let tmp = tempfile::tempdir().unwrap();
+        let work = tmp.path();
+
+        let git = |args: &[&str]| {
+            Command::new("git")
+                .arg("-C")
+                .arg(work)
+                .args(["-c", "user.email=test@example.com", "-c", "user.name=Test"])
+                .args(args)
+                .output()
+                .unwrap()
+        };
+        assert!(git(&["init"]).status.success());
+        assert!(git(&["checkout", "-b", "main"]).status.success());
+        std::fs::write(work.join("a.txt"), "hello").unwrap();
+        assert!(git(&["add", "-A"]).status.success());
+        assert!(git(&["commit", "-m", "base"]).status.success());
+
+        // A snapshot tag on the first (now-old) commit, plus a foreign tag.
+        assert!(git(&["tag", "sm-v-20260101-000000-aaaaaaa"]).status.success());
+        assert!(git(&["tag", "v1.0.0"]).status.success());
+
+        // Advance HEAD so the snapshot tag is no longer at the current version,
+        // then create a second snapshot that IS at HEAD.
+        std::fs::write(work.join("b.txt"), "world").unwrap();
+        assert!(git(&["add", "-A"]).status.success());
+        assert!(git(&["commit", "-m", "next"]).status.success());
+        assert!(git(&["tag", "sm-v-20260102-000000-bbbbbbb"]).status.success());
+
+        // Foreign (non sm-v-) tags are rejected outright.
+        assert!(delete_snapshot_version_unlocked(work, "v1.0.0").is_err());
+        assert!(run_git(work, &["rev-parse", "-q", "--verify", "refs/tags/v1.0.0"]).is_ok());
+
+        // The snapshot sitting on HEAD cannot be deleted.
+        assert!(delete_snapshot_version_unlocked(work, "sm-v-20260102-000000-bbbbbbb").is_err());
+        assert!(run_git(
+            work,
+            &["rev-parse", "-q", "--verify", "refs/tags/sm-v-20260102-000000-bbbbbbb"]
+        )
+        .is_ok());
+
+        // A non-current snapshot deletes cleanly (no remote configured => local only).
+        delete_snapshot_version_unlocked(work, "sm-v-20260101-000000-aaaaaaa").unwrap();
+        assert!(run_git(
+            work,
+            &["rev-parse", "-q", "--verify", "refs/tags/sm-v-20260101-000000-aaaaaaa"]
+        )
+        .is_err());
     }
 }

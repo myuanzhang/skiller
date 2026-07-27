@@ -980,6 +980,7 @@ pub fn run() {
             commands::git_backup::git_backup_create_snapshot,
             commands::git_backup::git_backup_list_versions,
             commands::git_backup::git_backup_restore_version,
+            commands::git_backup::git_backup_delete_version,
             // Projects
             commands::projects::get_projects,
             commands::projects::add_project,

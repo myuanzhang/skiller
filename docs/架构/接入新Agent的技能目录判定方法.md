@@ -71,7 +71,7 @@ updated: 2026-07-14
 
 问：**Agent 除主目录外，是否还会读某个和别的 Agent 共享的可写位置？**
 
-- 典型是统一的 `~/.agents/skills`（Codex、GitHub Copilot 都配了它作发现兜底）。
+- 典型是统一的 `~/.agents/skills`（Codex、GitHub Copilot、TRAE IDE / TRAE CN 都配了它作发现兜底）。
 - 判据：这个目录里的 skill 是**用户可自由增删**的（不是厂商托管），且 Agent 确实会读它。
 - 没有就留空 `vec![]`（大多数 Agent 属于此列）。
 
