@@ -185,6 +185,9 @@ export interface ProjectSkill {
   relative_path: string;
   description: string | null;
   path: string;
+  /** Real location when `path` is a symlink pointing elsewhere (e.g.
+   *  ~/.trae/skills/x → ~/.agents/skills/x). Absent when `path` is real. */
+  resolved_path?: string | null;
   files: string[];
   enabled: boolean;
   agent: string;
@@ -583,6 +586,9 @@ export const gitBackupListVersions = (limit?: number) =>
 
 export const gitBackupRestoreVersion = (tag: string) =>
   invoke<void>("git_backup_restore_version", { tag });
+
+export const gitBackupDeleteVersion = (tag: string) =>
+  invoke<void>("git_backup_delete_version", { tag });
 
 // ── Presets ──
 

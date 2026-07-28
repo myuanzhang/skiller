@@ -409,11 +409,15 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             project_relative_skills_dir: None,
         },
         ToolAdapter {
+            // TRAE IDE reads user-level skills from `~/.trae/skills/` and also
+            // scans the shared cross-client `~/.agents/skills/` location, so
+            // skills placed there (by other adapters or the SSoT hub) surface
+            // in the TRAE tab too.
             key: "trae".into(),
             display_name: "TRAE IDE".into(),
             relative_skills_dir: ".trae/skills".into(),
             relative_detect_dir: ".trae".into(),
-            additional_scan_dirs: vec![],
+            additional_scan_dirs: vec![".agents/skills".into()],
             readonly_scan_dirs: vec![],
             override_skills_dir: None,
             category: ToolCategory::Coding,
@@ -760,11 +764,13 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
             project_relative_skills_dir: None,
         },
         ToolAdapter {
+            // TRAE CN mirrors TRAE IDE: primary `~/.trae-cn/skills/` plus the
+            // shared cross-client `~/.agents/skills/` discovery location.
             key: "trae_cn".into(),
             display_name: "TRAE CN".into(),
             relative_skills_dir: ".trae-cn/skills".into(),
             relative_detect_dir: ".trae-cn".into(),
-            additional_scan_dirs: vec![],
+            additional_scan_dirs: vec![".agents/skills".into()],
             readonly_scan_dirs: vec![],
             override_skills_dir: None,
             category: ToolCategory::Coding,
@@ -1040,6 +1046,25 @@ mod tests {
             adapter.readonly_scan_dirs,
             vec![".grok/bundled/skills", ".grok/marketplace-cache"]
         );
+    }
+
+    #[test]
+    fn trae_adapters_scan_shared_agents_skills_dir() {
+        let adapters = default_tool_adapters();
+        for key in ["trae", "trae_cn"] {
+            let adapter = adapters
+                .iter()
+                .find(|adapter| adapter.key == key)
+                .unwrap_or_else(|| panic!("{key} adapter should exist"));
+            // TRAE natively reads the shared cross-client `~/.agents/skills`
+            // location in addition to its own dir, so it must be declared as an
+            // additional scan dir for those skills to surface in the UI.
+            assert_eq!(
+                adapter.additional_scan_dirs,
+                vec![".agents/skills"],
+                "{key} should scan the shared .agents/skills dir"
+            );
+        }
     }
 
     #[test]

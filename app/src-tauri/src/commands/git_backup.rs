@@ -224,6 +224,22 @@ pub async fn git_backup_restore_version(
     .await?
 }
 
+#[tauri::command]
+pub async fn git_backup_delete_version(
+    store: State<'_, Arc<SkillStore>>,
+    tag: String,
+) -> Result<(), AppError> {
+    let _ = store;
+    let skills_dir = central_repo::skills_dir();
+    tokio::task::spawn_blocking(move || {
+        git_backup::with_repo_lock("git delete snapshot", || {
+            git_backup::delete_snapshot_version_unlocked(&skills_dir, &tag)
+        })
+        .map_err(AppError::classify_git_error)
+    })
+    .await?
+}
+
 fn reconcile_skills_index_unlocked(store: &SkillStore) -> anyhow::Result<()> {
     sync_metadata::cleanup_temporary_files()?;
     if sync_metadata::has_complete_skill_snapshot() {

@@ -16,6 +16,8 @@ import {
   Search,
   SlidersHorizontal,
   CircleSlash,
+  Square,
+  SquareCheck,
   Tag,
   Trash2,
   Upload,
@@ -27,6 +29,8 @@ import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { PresetBar } from "../components/PresetBar";
+import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
+import { useMultiSelect } from "../hooks/useMultiSelect";
 import { AgentIcon } from "../components/AgentIcon";
 import { DetailSheet } from "../components/DetailSheet";
 import { SkillMarkdown } from "../components/SkillMarkdown";
@@ -79,7 +83,11 @@ const READONLY_DIR_KEY = "__readonly__";
  */
 function skillDirBucketKey(skill: ProjectSkill, scanDirs: string[]): string {
   if (skill.read_only) return READONLY_DIR_KEY;
-  return ownerScanDir(skill.path, scanDirs) ?? scanDirs[0] ?? "";
+  // Classify by the skill's real location: a symlink under the primary dir
+  // (e.g. ~/.trae/skills/x → ~/.agents/skills/x) belongs to the shared dir it
+  // resolves to, not the primary dir that merely links to it.
+  const classifyPath = skill.resolved_path ?? skill.path;
+  return ownerScanDir(classifyPath, scanDirs) ?? scanDirs[0] ?? "";
 }
 
 function buildBrokenSymlinkSkill(
@@ -132,6 +140,8 @@ function WorkspaceSkillCard({
   openDirLabel,
   actions,
   actionsHover = false,
+  selected = false,
+  isMultiSelect = false,
   onClick,
 }: {
   viewMode: "grid" | "list";
@@ -155,6 +165,10 @@ function WorkspaceSkillCard({
   openDirLabel?: string;
   actions?: ReactNode;
   actionsHover?: boolean;
+  /** Multi-select: whether this card is currently checked. */
+  selected?: boolean;
+  /** Multi-select: whether selection mode is active (shows checkbox, hides actions). */
+  isMultiSelect?: boolean;
   onClick?: () => void;
 }) {
   const { t } = useTranslation();
@@ -173,9 +187,15 @@ function WorkspaceSkillCard({
       <SkillCardShell
         viewMode="list"
         active={active}
+        selected={selected}
         onClick={onClick}
         className={cn(isBroken && "cursor-default border-red-500/40 bg-red-500/5 hover:border-red-500/50 hover:bg-red-500/10")}
       >
+        {isMultiSelect && (
+          selected
+            ? <SquareCheck className="h-4 w-4 shrink-0 text-accent" />
+            : <Square className="h-4 w-4 shrink-0 text-faint" />
+        )}
         <h3
           className={cn(
             "w-[180px] shrink-0 truncate text-[14px] font-semibold",
@@ -278,10 +298,16 @@ function WorkspaceSkillCard({
     <SkillCardShell
       viewMode="grid"
       active={active}
+      selected={selected}
       onClick={onClick}
       className={cn(isBroken && "cursor-default border-red-500/40 bg-red-500/5 hover:border-red-500/50 hover:bg-red-500/10")}
     >
       <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
+        {isMultiSelect && (
+          selected
+            ? <SquareCheck className="h-4 w-4 shrink-0 text-accent" />
+            : <Square className="h-4 w-4 shrink-0 text-faint" />
+        )}
         <h3
           className={cn(
             "flex-1 truncate text-[14px] font-semibold",
@@ -761,6 +787,52 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     [localSkills, managedLocalIds]
   );
 
+  // Read-only (vendor/plugin-managed) skills have no write actions, so they are
+  // excluded from batch selection entirely.
+  const selectableLocalSkills = useMemo(
+    () => visibleLocalSkills.filter((skill) => !skill.read_only),
+    [visibleLocalSkills]
+  );
+
+  const {
+    isMultiSelect, setIsMultiSelect,
+    selectedIds,
+    toggleSelect,
+    isAllSelected,
+    handleSelectAll,
+    exitMultiSelect,
+  } = useMultiSelect({
+    items: selectableLocalSkills,
+    filtered: selectableLocalSkills,
+    getKey: (s) => s.path,
+    isItemActive: () => true,
+  });
+
+  // Leaving an agent must not carry a stale selection into the next one.
+  useEffect(() => {
+    exitMultiSelect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentKey]);
+
+  const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
+  const [batchRemoveConfirm, setBatchRemoveConfirm] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+  const [batchRemoving, setBatchRemoving] = useState(false);
+
+  // Selected skill objects, split by which batch action applies to them.
+  const selectedLocalSkills = useMemo(
+    () => selectableLocalSkills.filter((skill) => selectedIds.has(skill.path)),
+    [selectableLocalSkills, selectedIds]
+  );
+  const selectedManagedSkills = useMemo(
+    () =>
+      selectedLocalSkills.filter(
+        (skill) => !!skill.center_skill_id && managedLocalIds.has(skill.center_skill_id)
+      ),
+    [selectedLocalSkills, managedLocalIds]
+  );
+  const anyRemovableSelected = selectedManagedSkills.length > 0;
+
   const localOnlyCount = useMemo(
     () => localSkills.filter((skill) => !skill.center_skill_id).length,
     [localSkills]
@@ -899,6 +971,56 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const handlePresetComplete = useCallback(async () => {
     await Promise.all([refreshManagedSkills(), refreshTools(), loadLocalSkills()]);
   }, [loadLocalSkills, refreshManagedSkills, refreshTools]);
+
+  // Batch: remove the managed subset of the selection from this agent. The
+  // central library copies are kept; only the agent link is cut.
+  const handleBatchRemoveFromAgent = async () => {
+    if (!agentKey || selectedManagedSkills.length === 0) return;
+    setBatchRemoving(true);
+    let failed = 0;
+    for (const skill of selectedManagedSkills) {
+      if (!skill.center_skill_id) continue;
+      try {
+        await api.unsyncSkillFromTool(skill.center_skill_id, agentKey);
+      } catch {
+        failed += 1;
+      }
+    }
+    const removed = selectedManagedSkills.length - failed;
+    await Promise.all([refreshManagedSkills(), refreshTools(), loadLocalSkills()]);
+    if (removed > 0) toast.success(t("globalWorkspace.localSkills.batchRemoved", { count: removed }));
+    if (failed > 0) toast.error(t("globalWorkspace.localSkills.batchRemoveFailed", { count: failed }));
+    setBatchRemoving(false);
+    setBatchRemoveConfirm(false);
+    exitMultiSelect();
+  };
+
+  // Batch delete, smart-dispatched per skill to mirror the single-card action:
+  // managed -> unlink from agent; unmanaged/broken -> delete local files.
+  const handleBatchDeleteLocal = async () => {
+    if (!currentTool || !agentKey || selectedLocalSkills.length === 0) return;
+    setBatchDeleting(true);
+    let failed = 0;
+    for (const skill of selectedLocalSkills) {
+      const isManaged = !!skill.center_skill_id && managedLocalIds.has(skill.center_skill_id);
+      try {
+        if (isManaged && skill.center_skill_id) {
+          await api.unsyncSkillFromTool(skill.center_skill_id, agentKey);
+        } else {
+          await api.deleteGlobalLocalSkill(currentTool.key, skill.relative_path);
+        }
+      } catch {
+        failed += 1;
+      }
+    }
+    const done = selectedLocalSkills.length - failed;
+    await Promise.all([refreshManagedSkills(), refreshTools(), loadLocalSkills()]);
+    if (done > 0) toast.success(t("globalWorkspace.localSkills.batchDeleted", { count: done }));
+    if (failed > 0) toast.error(t("globalWorkspace.localSkills.batchDeleteFailed", { count: failed }));
+    setBatchDeleting(false);
+    setBatchDeleteConfirm(false);
+    exitMultiSelect();
+  };
 
   const renderLocalSkillActions = (skill: ProjectSkill, variant: "grid" | "list") => {
     // Vendor/plugin-managed skills are display-only: no pull/adopt/remove/delete.
@@ -1232,6 +1354,18 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               >
                 <List className="h-4 w-4" />
               </button>
+              {selectableLocalSkills.length > 0 && (
+                <button
+                  onClick={() => (isMultiSelect ? exitMultiSelect() : setIsMultiSelect(true))}
+                  className={cn(
+                    "rounded-md p-2 transition-colors outline-none",
+                    isMultiSelect ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
+                  )}
+                  title={isMultiSelect ? t("globalWorkspace.localSkills.cancelSelect") : t("globalWorkspace.localSkills.selectMode")}
+                >
+                  <SquareCheck className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             <Button
@@ -1243,6 +1377,34 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
             </Button>
           </div>
         </div>
+
+        {isMultiSelect && selectableLocalSkills.length > 0 && (
+          <MultiSelectToolbar
+            selectedCount={selectedIds.size}
+            isAllSelected={isAllSelected}
+            anyDisabled={false}
+            anyRemovable={anyRemovableSelected}
+            showToggle={false}
+            removing={batchRemoving}
+            deleting={batchDeleting}
+            labels={{
+              hint: t("globalWorkspace.localSkills.selectHint"),
+              selected: t("mySkills.selectedCount", { count: selectedIds.size }),
+              delete: t("globalWorkspace.localSkills.deleteSelected", { count: selectedIds.size }),
+              remove: t("globalWorkspace.localSkills.removeFromAgentSelected", { count: selectedManagedSkills.length }),
+              enable: "",
+              disable: "",
+              selectAll: t("mySkills.selectAll"),
+              deselectAll: t("mySkills.deselectAll"),
+              cancel: t("common.cancel"),
+            }}
+            onDelete={() => setBatchDeleteConfirm(true)}
+            onRemove={() => setBatchRemoveConfirm(true)}
+            onToggle={() => {}}
+            onSelectAll={handleSelectAll}
+            onCancel={exitMultiSelect}
+          />
+        )}
 
         {presentStatuses.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5">
@@ -1450,13 +1612,22 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
 
             // Badge skills that live in a non-primary scan dir (e.g. the shared
             // ~/.agents/skills), so cross-agent skills are visually distinct.
+            // Classify by the real location: a symlink under the primary dir is
+            // badged to the shared dir it actually resolves to.
             const scanDirs = currentTool.scan_dirs ?? [currentTool.skills_dir];
-            const owner = ownerScanDir(skill.path, scanDirs);
+            const classifyPath = skill.resolved_path ?? skill.path;
+            const owner = ownerScanDir(classifyPath, scanDirs);
+            const isSymlinked = !!skill.resolved_path;
             const sourceBadge =
               owner && owner !== scanDirs[0]
                 ? {
-                    label: scanDirShortLabel(owner),
-                    title: compactHomePath(owner),
+                    label: isSymlinked ? `↪ ${scanDirShortLabel(owner)}` : scanDirShortLabel(owner),
+                    title: isSymlinked
+                      ? t("globalWorkspace.localSkills.symlinkedFrom", {
+                          primary: compactHomePath(scanDirs[0] ?? ""),
+                          target: compactHomePath(skill.resolved_path ?? owner),
+                        })
+                      : compactHomePath(owner),
                     onClick: () => void openScanDir(owner),
                   }
                 : null;
@@ -1473,6 +1644,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 }
               : null;
 
+            const selectable = !skill.read_only;
+            const isSelected = isMultiSelect && selectable && selectedIds.has(skill.path);
             return (
               <WorkspaceSkillCard
                 key={`${skill.agent}:${skill.path}`}
@@ -1495,11 +1668,21 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                     : null
                 }
                 conflictBadge={conflictBadge}
-                actions={renderLocalSkillActions(skill, viewMode)}
+                selected={isSelected}
+                isMultiSelect={isMultiSelect && selectable}
+                actions={isMultiSelect ? undefined : renderLocalSkillActions(skill, viewMode)}
                 actionsHover={viewMode === "list"}
-                onOpenDir={isBroken ? undefined : () => void openSkillDir(skill)}
+                onOpenDir={isBroken || isMultiSelect ? undefined : () => void openSkillDir(skill)}
                 openDirLabel={t("globalWorkspace.localSkills.openDir")}
-                onClick={isBroken ? undefined : () => void openLocalDetail(skill)}
+                onClick={
+                  isMultiSelect
+                    ? selectable
+                      ? () => toggleSelect(skill.path)
+                      : undefined
+                    : isBroken
+                      ? undefined
+                      : () => void openLocalDetail(skill)
+                }
               />
             );
           })}
@@ -1636,6 +1819,31 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         confirmLabel={t("common.delete")}
         onClose={() => setDeleteLocalConfirmSkill(null)}
         onConfirm={() => deleteLocalConfirmSkill ? handleDeleteLocalSkill(deleteLocalConfirmSkill) : Promise.resolve()}
+      />
+      <ConfirmDialog
+        open={batchRemoveConfirm}
+        title={t("globalWorkspace.localSkills.removeManaged")}
+        message={t("globalWorkspace.localSkills.batchRemoveConfirm", {
+          count: selectedManagedSkills.length,
+          agent: currentTool?.display_name ?? "",
+        })}
+        tone="warning"
+        onClose={() => setBatchRemoveConfirm(false)}
+        onConfirm={handleBatchRemoveFromAgent}
+      />
+      <ConfirmDialog
+        open={batchDeleteConfirm}
+        title={t("globalWorkspace.localSkills.batchDeleteTitle")}
+        message={t("globalWorkspace.localSkills.batchDeleteConfirm", {
+          count: selectedLocalSkills.length,
+          removeCount: selectedManagedSkills.length,
+          deleteCount: selectedLocalSkills.length - selectedManagedSkills.length,
+          agent: currentTool?.display_name ?? "",
+        })}
+        tone="danger"
+        confirmLabel={t("common.delete")}
+        onClose={() => setBatchDeleteConfirm(false)}
+        onConfirm={handleBatchDeleteLocal}
       />
     </div>
   );

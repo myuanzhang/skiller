@@ -20,6 +20,12 @@ pub struct ProjectSkillInfo {
     pub relative_path: String,
     pub description: Option<String>,
     pub path: String,
+    /// Real location of the skill when `path` is a symlink pointing elsewhere
+    /// (e.g. `~/.trae/skills/x` → `~/.agents/skills/x`). `None` when `path` is
+    /// already the real directory. Lets the UI classify/badge by the true
+    /// owning scan dir while write ops still act on the literal `path`.
+    #[serde(default)]
+    pub resolved_path: Option<String>,
     pub files: Vec<String>,
     pub enabled: bool,
     /// Agent key that owns this skill (e.g. "claude_code", "cursor").
@@ -44,6 +50,23 @@ pub struct ProjectSkillInfo {
     pub last_modified_at: Option<i64>,
     #[serde(skip_serializing)]
     pub content_hash: Option<String>,
+}
+
+/// Return the skill's real location when the skill directory itself is a
+/// symlink that resolves elsewhere, so callers can classify by the true
+/// directory. Returns `None` when the leaf is a real directory.
+///
+/// The comparison normalizes the *parent* on both sides before comparing, so
+/// ancestor symlinks unrelated to the skill (e.g. macOS `/var` → `/private/var`)
+/// don't produce false positives — only the skill dir's own symlink-ness counts.
+fn resolved_symlink_path(path: &Path) -> Option<String> {
+    let canonical = std::fs::canonicalize(path).ok()?;
+    let (parent, file_name) = (path.parent()?, path.file_name()?);
+    let literal_in_canonical_parent = std::fs::canonicalize(parent).ok()?.join(file_name);
+    if canonical == literal_in_canonical_parent {
+        return None;
+    }
+    Some(canonical.to_string_lossy().to_string())
 }
 
 /// Read skills from all configured agents' project-level skill directories.
@@ -140,6 +163,7 @@ pub fn read_readonly_skills(
             relative_path,
             description: meta.description,
             path: path.to_string_lossy().to_string(),
+            resolved_path: resolved_symlink_path(&path),
             files: list_files(&path),
             enabled: true,
             agent: agent_key.to_string(),
@@ -242,6 +266,7 @@ fn read_skills_from_dir_recursive(
                 relative_path,
                 description: meta.description,
                 path: path.to_string_lossy().to_string(),
+                resolved_path: resolved_symlink_path(&path),
                 files,
                 enabled,
                 agent: agent.to_string(),
@@ -408,6 +433,49 @@ mod tests {
     use super::{read_linked_workspace_skills, read_project_skills, AgentSkillConfig};
     use std::fs;
     use tempfile::tempdir;
+
+    #[test]
+    fn resolved_path_is_set_for_symlinked_skill_and_none_for_real_dir() {
+        let tmp = tempdir().unwrap();
+        // Real skill lives under a shared dir; a per-agent dir symlinks to it.
+        let shared = tmp.path().join(".agents").join("skills");
+        let real_skill = shared.join("grill-me");
+        fs::create_dir_all(&real_skill).unwrap();
+        fs::write(
+            real_skill.join("SKILL.md"),
+            "---\nname: Grill Me\ndescription: shared\n---\n",
+        )
+        .unwrap();
+
+        let agent_dir = tmp.path().join(".trae").join("skills");
+        fs::create_dir_all(&agent_dir).unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&real_skill, agent_dir.join("grill-me")).unwrap();
+
+        // A second, real (non-symlink) skill directly in the agent dir.
+        let plain = agent_dir.join("plain");
+        fs::create_dir_all(&plain).unwrap();
+        fs::write(plain.join("SKILL.md"), "---\nname: Plain\n---\n").unwrap();
+
+        let skills = read_linked_workspace_skills(&agent_dir, None, "trae", "TRAE IDE", false);
+
+        let grill = skills.iter().find(|s| s.dir_name == "grill-me").unwrap();
+        let plain_skill = skills.iter().find(|s| s.dir_name == "plain").unwrap();
+
+        #[cfg(unix)]
+        {
+            // The symlinked skill resolves to its real shared location…
+            let resolved = grill.resolved_path.as_deref().expect("symlink resolves");
+            assert!(
+                resolved.contains(".agents/skills/grill-me"),
+                "resolved_path should point at the real shared dir, got: {resolved}"
+            );
+            // …while `path` stays the literal symlink so write ops stay safe.
+            assert!(grill.path.contains(".trae/skills/grill-me"));
+        }
+        // A real directory has no separate resolved location.
+        assert_eq!(plain_skill.resolved_path, None);
+    }
 
     #[test]
     fn reads_nested_project_skills_recursively() {

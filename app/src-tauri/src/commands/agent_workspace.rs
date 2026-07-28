@@ -950,6 +950,7 @@ mod tests {
             relative_path: "local-tool".to_string(),
             description: Some("Agent copy".to_string()),
             path: "/tmp/agent-skills/local-tool".to_string(),
+            resolved_path: None,
             files: vec![],
             enabled: true,
             agent: "test_agent".to_string(),

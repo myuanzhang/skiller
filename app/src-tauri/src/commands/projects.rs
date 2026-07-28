@@ -1205,6 +1205,7 @@ mod tests {
             relative_path: "example-skill".to_string(),
             description: None,
             path,
+            resolved_path: None,
             files: vec!["SKILL.md".to_string()],
             enabled: true,
             agent: "claude_code".to_string(),
