@@ -11,15 +11,17 @@
 ## 功能
 
 - **统一技能库** —— 从 Git 仓库、本地文件夹、`.zip` / `.skill` 归档，或 [skills.sh](https://skills.sh) 市场安装 skill。所有 skill 汇入一个中央库，默认位于 `~/.skiller`，可在**设置**里自定义。
+- **广泛的 Agent 支持** —— 开箱支持 50+ 编码与个人 AI Agent：Claude Code、Codex、Cursor、TRAE IDE / TRAE CN、Gemini CLI、GitHub Copilot、OpenCode、Grok、Windsurf、Cline 等等。
 - **预设（Preset）** —— 把若干 skill 打包成命名预设。在任意工作区点击预设即可为当前 Agent 范围一键启用/停用其全部 skill。
-- **全局工作区** —— 每个 Agent 有独立页面，列出其全局目录里的所有 skill（包括不是通过 Skiller 安装的），与 Agent 实际看到的内容一致。可按 Agent 增删，或用「全部 Agents」总览统一管理。
+- **各 Agent 工作区** —— 每个 Agent 有独立页面，列出它实际能看到的所有 skill（包括不是通过 Skiller 安装的，以及经 `~/.agents/skills` 共享的）。skill 按真实来源目录分组并可筛选，跨 Agent 与软链接来的条目会带徽章标注。可按 Agent 增删，或用「全部 Agents」总览统一管理。
 - **项目工作区** —— 查看和管理各 Agent 的项目级 skill 目录，与中央库对比并双向同步。
 - **多工具同步** —— 一键将 skill 以软链或复制方式同步到任意受支持的工具。
-- **批量操作** —— 多选 skill 批量启用/停用、导出或删除。
-- **标签与筛选** —— 给 skill 打标签，按来源或标签筛选。
+- **批量操作** —— 在技能中心或任意 Agent 视图多选 skill，批量启用/停用、编辑标签、删除，或（在 Agent 视图）从该 Agent 解除链接而保留中央库副本。
+- **标签与筛选** —— 给 skill 打标签，按来源、标签或同步状态筛选。
+- **同步状态与使用洞察** —— 每个 Agent 本地 skill 都会显示它是「仅本地 / 已纳管 / 已同步 / 有分歧」，以及在该 Agent 下被触发了多少次。
 - **更新追踪** —— 检查 Git 来源 skill 的上游更新；重新导入本地 skill。
 - **自定义工具** —— 添加自己的 Agent/工具及其 skill 目录，或覆盖任意内置工具的默认路径。
-- **Git 备份与恢复** —— 用 Git 对技能库做版本管理，实现备份与多机同步。
+- **Git 备份、快照与恢复** —— 用 Git 对技能库做版本管理，实现备份与多机同步。每次同步可生成快照，之后可浏览、恢复或删除。
 
 ## 技术栈
 

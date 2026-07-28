@@ -1,6 +1,8 @@
 # skiller
 
-统一、可视化管理各 AI Agent（Claude Code、Codex、TRAE、OpenCode、OpenClaw 等）的 Skills。
+统一、可视化管理各 AI Agent（Claude Code、Codex、Cursor、TRAE IDE / TRAE CN、Gemini CLI、GitHub Copilot、OpenCode 等 50+ 工具）的 Skills。
+
+面向使用者的功能说明（安装、预设、批量操作、Git 快照等）见 [`app/README.md`](app/README.md)（[中文](app/README.zh-CN.md)）。
 
 ## 目录结构
 
@@ -10,7 +12,8 @@ skiller/
 ├── CLAUDE.md              # 编码行为准则（单一真源 SSoT）
 ├── docs/                  # 文档（索引见 docs/README.md）
 │   ├── 架构/              # 现行机制说明（Agent 管理、中央仓库、技能发现等）
-│   ├── 协作/              # AI 协作：会话交接说明、交接 Prompt
+│   ├── 协作/              # AI 协作：会话交接说明、交接 Prompt、Worktree 指南
+│   ├── adr/               # 架构决策记录（ADR）
 │   ├── 开发环境.md        # 本地构建与运行
 │   ├── research/          # 调研资料
 │   └── archive/           # 已完成的历史计划（冻结存档）
