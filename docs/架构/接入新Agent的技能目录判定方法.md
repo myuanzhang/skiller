@@ -87,7 +87,7 @@ updated: 2026-07-14
 
 | Agent | 只读目录 | 布局 | 内容 |
 |---|---|---|---|
-| Codex | `.codex/plugins/cache` | `<marketplace>/<pkg>/<ver>/skills/<skill>` | openai-templates 等 |
+| Codex | `.codex/plugins/cache`（插件）+ `.codex/skills/.system`（内置系统 skill） | 缓存为 `<marketplace>/<pkg>/<ver>/skills/<skill>`；`.system` 为扁平 `<skill>/`（根是 dot-dir） | openai-templates 等；imagegen / openai-docs / plugin-creator / review-agent / skill-creator / skill-installer |
 | Claude Code | `.claude/plugins/cache` | `<marketplace>/<plugin>/<ver>/skills/<skill>` | superpowers / frontend-design / last30days |
 | Grok | `.grok/bundled/skills`（内置）+ `.grok/marketplace-cache`（下载插件） | 内置为扁平；缓存为 `<hash>/.../skills/<skill>` | design/review/implement + neon/openclaw |
 | TRAE IDE / TRAE CN | `.trae/skills/.system`（TRAE CN 为 `.trae-cn/skills/.system`） | 扁平 `<skill>/`（根是 dot-dir） | plugin-creator / skill-creator / skill-installer |
