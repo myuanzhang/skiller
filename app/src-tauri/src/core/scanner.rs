@@ -316,6 +316,29 @@ mod tests {
     }
 
     #[test]
+    fn recursive_scans_dot_system_root() {
+        // TRAE's read-only system skills live under `<skills>/.system/`. The
+        // read-only scan roots that dir directly, so its skill children must be
+        // found even though the root is a dot-dir. (Only .git/.hub/node_modules
+        // are skipped, and only as *children* — not the root itself.)
+        let tmp = tempdir().unwrap();
+        let system = tmp.path().join(".system");
+        write_skill(&system.join("plugin-creator"));
+        write_skill(&system.join("skill-creator"));
+        write_skill(&system.join("skill-installer"));
+
+        let results = run(&system);
+        let names: Vec<_> = results
+            .iter()
+            .filter_map(|p| p.file_name().and_then(|n| n.to_str()))
+            .collect();
+        assert_eq!(results.len(), 3, "got: {names:?}");
+        assert!(names.contains(&"plugin-creator"));
+        assert!(names.contains(&"skill-creator"));
+        assert!(names.contains(&"skill-installer"));
+    }
+
+    #[test]
     fn recursive_finds_deeply_nested_skill() {
         let tmp = tempdir().unwrap();
         let mut deep = tmp.path().to_path_buf();

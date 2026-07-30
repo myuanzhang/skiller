@@ -90,6 +90,9 @@ updated: 2026-07-14
 | Codex | `.codex/plugins/cache` | `<marketplace>/<pkg>/<ver>/skills/<skill>` | openai-templates 等 |
 | Claude Code | `.claude/plugins/cache` | `<marketplace>/<plugin>/<ver>/skills/<skill>` | superpowers / frontend-design / last30days |
 | Grok | `.grok/bundled/skills`（内置）+ `.grok/marketplace-cache`（下载插件） | 内置为扁平；缓存为 `<hash>/.../skills/<skill>` | design/review/implement + neon/openclaw |
+| TRAE IDE / TRAE CN | `.trae/skills/.system`（TRAE CN 为 `.trae-cn/skills/.system`） | 扁平 `<skill>/`（根是 dot-dir） | plugin-creator / skill-creator / skill-installer |
+
+> 注：`.system` 是 `.` 开头的目录。主目录扫描（`read_skills_from_dir` 的 `should_skip_dir`）会跳过所有 dot-dir，所以 `.system` 只会经**只读根**被扫到，不会在可写主目录里重复出现；`collect_skill_dirs` 只跳过作为**子目录**的 `.git`/`.hub`/`node_modules`，dot-dir 作为扫描根不受影响。
 
 > 为什么必须归只读而不是当普通目录扫：这些目录里的 skill 会被厂商在升级时重写。
 > 若允许 skiller 对它们同步/导入/删除，轻则改动被下次升级抹掉，重则破坏厂商 bundle。
