@@ -59,6 +59,17 @@ function scanDirShortLabel(dir: string): string {
 }
 
 /**
+ * Label for a read-only (vendor/plugin) dir. Uses the last two path segments so
+ * sibling roots under the same agent stay distinct — e.g. Codex's
+ * `.codex/plugins/cache` -> "plugins/cache" and `.codex/skills/.system` ->
+ * "skills/.system", which `scanDirShortLabel` would collapse to ".codex".
+ */
+function readonlyDirLabel(dir: string): string {
+  const segs = compactHomePath(dir).split("/").filter(Boolean);
+  return segs.slice(-2).join("/") || dir;
+}
+
+/**
  * Given a skill's absolute path and the agent's ordered scan dirs (primary
  * first), return the owning scan dir. Longest-prefix match handles nested roots.
  */
@@ -73,16 +84,24 @@ function ownerScanDir(skillPath: string, scanDirs: string[]): string | null {
   return best;
 }
 
-/** Sentinel bucket key grouping all read-only (vendor/plugin) skills together. */
-const READONLY_DIR_KEY = "__readonly__";
+/** Prefix marking a per-read-only-dir bucket key, e.g. "__readonly__:<dir>". */
+const READONLY_DIR_PREFIX = "__readonly__:";
 
 /**
- * Bucket key used by the directory filter. Read-only skills collapse into one
- * bucket regardless of which vendor dir they live in; everything else buckets
- * by its owning scan dir (primary or an additional shared dir like `.agents`).
+ * Bucket key used by the directory filter. Read-only skills bucket by their
+ * owning vendor dir (so sibling roots like Codex's `plugins/cache` and
+ * `skills/.system` stay separable); everything else buckets by its owning scan
+ * dir (primary or an additional shared dir like `.agents`).
  */
-function skillDirBucketKey(skill: ProjectSkill, scanDirs: string[]): string {
-  if (skill.read_only) return READONLY_DIR_KEY;
+function skillDirBucketKey(
+  skill: ProjectSkill,
+  scanDirs: string[],
+  readonlyDirs: string[]
+): string {
+  if (skill.read_only) {
+    const owner = ownerScanDir(skill.resolved_path ?? skill.path, readonlyDirs);
+    return `${READONLY_DIR_PREFIX}${owner ?? readonlyDirs[0] ?? ""}`;
+  }
   // Classify by the skill's real location: a symlink under the primary dir
   // (e.g. ~/.trae/skills/x → ~/.agents/skills/x) belongs to the shared dir it
   // resolves to, not the primary dir that merely links to it.
@@ -683,7 +702,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         }
         if (dirFilter !== null) {
           const scanDirs = currentTool?.scan_dirs ?? (currentTool ? [currentTool.skills_dir] : []);
-          if (skillDirBucketKey(skill, scanDirs) !== dirFilter) return false;
+          const readonlyDirs = currentTool?.readonly_dirs ?? [];
+          if (skillDirBucketKey(skill, scanDirs, readonlyDirs) !== dirFilter) return false;
         }
         return true;
       })
@@ -722,12 +742,13 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const presentDirBuckets = useMemo(() => {
     if (!currentTool) return [];
     const scanDirs = currentTool.scan_dirs ?? [currentTool.skills_dir];
+    const readonlyDirs = currentTool.readonly_dirs ?? [];
     const counts = new Map<string, number>();
     for (const skill of localSkills) {
-      const key = skillDirBucketKey(skill, scanDirs);
+      const key = skillDirBucketKey(skill, scanDirs, readonlyDirs);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
-    const buckets: { key: string; label: string; count: number }[] = [];
+    const buckets: { key: string; label: string; count: number; readonly: boolean }[] = [];
     // Primary first, then each additional scan dir in declared order.
     scanDirs.forEach((dir, i) => {
       const count = counts.get(dir) ?? 0;
@@ -736,17 +757,25 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         key: dir,
         label: i === 0 ? t("globalWorkspace.localSkills.primaryDir") : scanDirShortLabel(dir),
         count,
+        readonly: false,
       });
     });
-    // Read-only skills collapse into one bucket regardless of vendor dir.
-    const readonlyCount = counts.get(READONLY_DIR_KEY) ?? 0;
-    if (readonlyCount > 0) {
+    // Read-only skills bucket per vendor dir so siblings (e.g. Codex's
+    // plugins/cache vs skills/.system) are separately filterable.
+    readonlyDirs.forEach((dir) => {
+      const key = `${READONLY_DIR_PREFIX}${dir}`;
+      const count = counts.get(key) ?? 0;
+      if (count === 0) return;
       buckets.push({
-        key: READONLY_DIR_KEY,
-        label: t("globalWorkspace.localSkills.readOnly"),
-        count: readonlyCount,
+        key,
+        label:
+          readonlyDirs.length > 1
+            ? `${t("globalWorkspace.localSkills.readOnly")} · ${readonlyDirLabel(dir)}`
+            : t("globalWorkspace.localSkills.readOnly"),
+        count,
+        readonly: true,
       });
-    }
+    });
     return buckets;
   }, [currentTool, localSkills, t]);
 
@@ -1470,7 +1499,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
             </button>
             {presentDirBuckets.map((bucket) => {
               const active = dirFilter === bucket.key;
-              const isReadonly = bucket.key === READONLY_DIR_KEY;
+              const isReadonly = bucket.readonly;
               return (
                 <button
                   key={bucket.key}
@@ -1615,11 +1644,25 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
             // Classify by the real location: a symlink under the primary dir is
             // badged to the shared dir it actually resolves to.
             const scanDirs = currentTool.scan_dirs ?? [currentTool.skills_dir];
+            const readonlyDirs = currentTool.readonly_dirs ?? [];
             const classifyPath = skill.resolved_path ?? skill.path;
-            const owner = ownerScanDir(classifyPath, scanDirs);
             const isSymlinked = !!skill.resolved_path;
+            // Read-only skills carry no writable owner, so badge them by their
+            // vendor dir instead — but only when the agent has more than one
+            // read-only root (e.g. Codex's plugins/cache vs skills/.system),
+            // where the generic lock badge alone can't tell them apart.
+            const readonlyOwner = skill.read_only
+              ? ownerScanDir(classifyPath, readonlyDirs)
+              : null;
+            const owner = skill.read_only ? null : ownerScanDir(classifyPath, scanDirs);
             const sourceBadge =
-              owner && owner !== scanDirs[0]
+              readonlyOwner && readonlyDirs.length > 1
+                ? {
+                    label: readonlyDirLabel(readonlyOwner),
+                    title: compactHomePath(readonlyOwner),
+                    onClick: () => void openScanDir(readonlyOwner),
+                  }
+                : owner && owner !== scanDirs[0]
                 ? {
                     label: isSymlinked ? `↪ ${scanDirShortLabel(owner)}` : scanDirShortLabel(owner),
                     title: isSymlinked
@@ -1716,15 +1759,27 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
               >
                 {getLocalStatusMeta(t, localDetailSkill.sync_status).label}
               </StatusPill>
-              {localDetailSkill.read_only && (
-                <span
-                  title={t("globalWorkspace.localSkills.readOnlyHint")}
-                  className="inline-flex items-center gap-1 rounded-full border border-warning-border bg-warning-bg px-2.5 py-1 text-[12px] font-medium text-warning"
-                >
-                  <Lock className="h-3 w-3" />
-                  {t("globalWorkspace.localSkills.readOnly")}
-                </span>
-              )}
+              {localDetailSkill.read_only && (() => {
+                const readonlyDirs = currentTool?.readonly_dirs ?? [];
+                const owner =
+                  readonlyDirs.length > 1
+                    ? ownerScanDir(
+                        localDetailSkill.resolved_path ?? localDetailSkill.path,
+                        readonlyDirs
+                      )
+                    : null;
+                return (
+                  <span
+                    title={owner ? compactHomePath(owner) : t("globalWorkspace.localSkills.readOnlyHint")}
+                    className="inline-flex items-center gap-1 rounded-full border border-warning-border bg-warning-bg px-2.5 py-1 text-[12px] font-medium text-warning"
+                  >
+                    <Lock className="h-3 w-3" />
+                    {owner
+                      ? `${t("globalWorkspace.localSkills.readOnly")} · ${readonlyDirLabel(owner)}`
+                      : t("globalWorkspace.localSkills.readOnly")}
+                  </span>
+                );
+              })()}
               <span className="rounded-full bg-surface-hover px-2.5 py-1 text-[12px] text-muted">
                 {localDetailSkill.relative_path}
               </span>
