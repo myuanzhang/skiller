@@ -1673,6 +1673,18 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                       : compactHomePath(owner),
                     onClick: () => void openScanDir(owner),
                   }
+                : isSymlinked
+                ? {
+                    // Symlink resolving outside any scan dir — almost always the
+                    // central repo (~/.skiller/skills). Mark it as a symlink;
+                    // it's an info-only badge (no onClick) so opening the dir
+                    // still targets the local link, not the central copy.
+                    label: `↪ ${t("globalWorkspace.localSkills.symlinkTargetCentral")}`,
+                    title: t("globalWorkspace.localSkills.symlinkedFrom", {
+                      primary: compactHomePath(scanDirs[0] ?? ""),
+                      target: compactHomePath(skill.resolved_path ?? ""),
+                    }),
+                  }
                 : null;
 
             // Same-name skill in another scan dir: surface the ambiguity (the

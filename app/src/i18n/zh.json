@@ -921,6 +921,7 @@
       "nameConflict": "重名",
       "nameConflictHint": "该 Agent 的另一个目录下也有同名 Skill。实际加载哪一份由 Agent 自身规则决定 — 建议删除多余的一份以消除歧义。所在位置：",
       "symlinkedFrom": "主目录 {{primary}} 下是软链接，真实文件位于 {{target}}。删除只会移除软链接，不影响共享的真实文件。",
+      "symlinkTargetCentral": "中央仓库",
       "upload": "纳管",
       "pull": "拉取",
       "removeManaged": "从 Agent 移除",
