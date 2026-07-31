@@ -1491,11 +1491,21 @@ fn usage_timestamp(value: &Value) -> Option<i64> {
 
 fn add_usage_event(
     usage: &mut HashMap<String, SkillUsageStatDto>,
+    installed_at: &HashMap<String, i64>,
     skill_name: String,
     count: u64,
     last_used_at: Option<i64>,
     agent: Option<String>,
 ) {
+    // Drop events that predate the skill's current install so an uninstall +
+    // reinstall (which rebuilds the DB record with a fresh created_at) starts
+    // counting from zero. Only applies to managed skills with a known install
+    // time; events with no timestamp are kept (can't tell if they're stale).
+    if let (Some(&floor), Some(ts)) = (installed_at.get(&skill_name), last_used_at) {
+        if ts < floor {
+            return;
+        }
+    }
     let stat = usage.entry(skill_name.clone()).or_insert_with(|| SkillUsageStatDto {
         skill_name,
         count: 0,
@@ -1527,7 +1537,11 @@ fn add_usage_event(
     }
 }
 
-fn collect_usage_jsonl(path: &Path, usage: &mut HashMap<String, SkillUsageStatDto>) {
+fn collect_usage_jsonl(
+    path: &Path,
+    usage: &mut HashMap<String, SkillUsageStatDto>,
+    installed_at: &HashMap<String, i64>,
+) {
     let Ok(content) = std::fs::read_to_string(path) else {
         return;
     };
@@ -1544,11 +1558,15 @@ fn collect_usage_jsonl(path: &Path, usage: &mut HashMap<String, SkillUsageStatDt
             .and_then(Value::as_str)
             .map(ToString::to_string);
         let count = value_as_u64(value.get("count"));
-        add_usage_event(usage, skill_name, count, usage_timestamp(&value), agent);
+        add_usage_event(usage, installed_at, skill_name, count, usage_timestamp(&value), agent);
     }
 }
 
-fn collect_usage_json(path: &Path, usage: &mut HashMap<String, SkillUsageStatDto>) {
+fn collect_usage_json(
+    path: &Path,
+    usage: &mut HashMap<String, SkillUsageStatDto>,
+    installed_at: &HashMap<String, i64>,
+) {
     let Ok(content) = std::fs::read_to_string(path) else {
         return;
     };
@@ -1574,6 +1592,7 @@ fn collect_usage_json(path: &Path, usage: &mut HashMap<String, SkillUsageStatDto
         };
         add_usage_event(
             usage,
+            installed_at,
             skill_name.to_string(),
             count,
             last_used_at,
@@ -1588,7 +1607,11 @@ fn collect_usage_json(path: &Path, usage: &mut HashMap<String, SkillUsageStatDto
 /// JSON-encoded `arguments.skill`. Slash-command markers are deliberately
 /// ignored — a `/skill` invocation also emits a `Skill` call, so counting both
 /// would double-count. Malformed lines are skipped.
-fn collect_usage_trae(trae_cli_dir: &Path, usage: &mut HashMap<String, SkillUsageStatDto>) {
+fn collect_usage_trae(
+    trae_cli_dir: &Path,
+    usage: &mut HashMap<String, SkillUsageStatDto>,
+    installed_at: &HashMap<String, i64>,
+) {
     let sessions_dir = trae_cli_dir.join("sessions");
     if !sessions_dir.is_dir() {
         return;
@@ -1609,7 +1632,7 @@ fn collect_usage_trae(trae_cli_dir: &Path, usage: &mut HashMap<String, SkillUsag
                 continue;
             };
             let last_used_at = value.get("timestamp").and_then(value_as_i64);
-            add_usage_event(usage, skill_name, 1, last_used_at, Some("trae".to_string()));
+            add_usage_event(usage, installed_at, skill_name, 1, last_used_at, Some("trae".to_string()));
         }
     }
 }
@@ -1634,7 +1657,7 @@ fn trae_skill_call_name(value: &Value) -> Option<String> {
         .map(ToString::to_string)
 }
 
-fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
+fn collect_usage_stats(installed_at: HashMap<String, i64>) -> Vec<SkillUsageStatDto> {
     let mut usage: HashMap<String, SkillUsageStatDto> = HashMap::new();
 
     let skiller_usage_dir = central_repo::base_dir().join("usage");
@@ -1642,7 +1665,7 @@ fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
         for entry in WalkDir::new(&skiller_usage_dir).into_iter().filter_map(Result::ok) {
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some("jsonl") {
-                collect_usage_jsonl(path, &mut usage);
+                collect_usage_jsonl(path, &mut usage, &installed_at);
             }
         }
     }
@@ -1650,9 +1673,9 @@ fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
     if let Some(home) = dirs::home_dir() {
         let claude_stats = home.join(".claude").join("skill-stats.json");
         if claude_stats.is_file() {
-            collect_usage_json(&claude_stats, &mut usage);
+            collect_usage_json(&claude_stats, &mut usage, &installed_at);
         }
-        collect_usage_trae(&home.join(".trae").join("cli"), &mut usage);
+        collect_usage_trae(&home.join(".trae").join("cli"), &mut usage, &installed_at);
     }
 
     let mut stats: Vec<_> = usage.into_values().collect();
@@ -1669,8 +1692,19 @@ fn collect_usage_stats() -> Vec<SkillUsageStatDto> {
 }
 
 #[tauri::command]
-pub async fn get_skill_usage_stats() -> Result<Vec<SkillUsageStatDto>, AppError> {
-    Ok(tauri::async_runtime::spawn_blocking(collect_usage_stats).await?)
+pub async fn get_skill_usage_stats(
+    store: State<'_, Arc<SkillStore>>,
+) -> Result<Vec<SkillUsageStatDto>, AppError> {
+    // Map each managed skill name to its install time so usage before the
+    // current install (e.g. from a previous install that was later removed)
+    // is excluded — a reinstalled skill starts counting from zero.
+    let installed_at: HashMap<String, i64> = store
+        .get_all_skills()
+        .map_err(AppError::db)?
+        .into_iter()
+        .map(|s| (s.name, s.created_at))
+        .collect();
+    Ok(tauri::async_runtime::spawn_blocking(move || collect_usage_stats(installed_at)).await?)
 }
 
 pub fn update_git_skill_internal(
@@ -2953,7 +2987,7 @@ mod tests {
         fs::write(&log, lines.join("\n")).unwrap();
 
         let mut usage: HashMap<String, SkillUsageStatDto> = HashMap::new();
-        collect_usage_trae(tmp.path(), &mut usage);
+        collect_usage_trae(tmp.path(), &mut usage, &HashMap::new());
 
         let writer = usage.get("critical-ai-writer").expect("writer counted");
         assert_eq!(writer.count, 2, "two Skill calls for the writer");
@@ -2966,5 +3000,32 @@ mod tests {
 
         assert_eq!(usage.get("topic-strategy").map(|s| s.count), Some(1));
         assert!(!usage.contains_key("Bash"), "non-Skill calls ignored");
+    }
+
+    #[test]
+    fn add_usage_event_excludes_calls_before_install() {
+        // Two Skill calls for the same skill: one before install, one after.
+        let pre_install = 1_000_000_i64; // older event
+        let post_install = 3_000_000_i64; // newer event
+        let floor = 2_000_000_i64; // install time between the two
+
+        let mut installed_at = HashMap::new();
+        installed_at.insert("grilling".to_string(), floor);
+
+        let mut usage: HashMap<String, SkillUsageStatDto> = HashMap::new();
+        add_usage_event(&mut usage, &installed_at, "grilling".into(), 1, Some(pre_install), Some("trae".into()));
+        add_usage_event(&mut usage, &installed_at, "grilling".into(), 1, Some(post_install), Some("trae".into()));
+
+        let stat = usage.get("grilling").expect("post-install call counted");
+        assert_eq!(stat.count, 1, "only the call after install time is counted");
+        assert_eq!(stat.last_used_at, Some(post_install));
+        assert_eq!(stat.agents[0].count, 1);
+
+        // Without a known install time (unmanaged skill), both are counted.
+        let mut usage_no_floor: HashMap<String, SkillUsageStatDto> = HashMap::new();
+        let empty = HashMap::new();
+        add_usage_event(&mut usage_no_floor, &empty, "grilling".into(), 1, Some(pre_install), Some("trae".into()));
+        add_usage_event(&mut usage_no_floor, &empty, "grilling".into(), 1, Some(post_install), Some("trae".into()));
+        assert_eq!(usage_no_floor.get("grilling").map(|s| s.count), Some(2));
     }
 }
