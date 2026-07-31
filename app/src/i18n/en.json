@@ -923,6 +923,7 @@
       "nameConflict": "Duplicate",
       "nameConflictHint": "A skill with this name also exists in another directory of this agent. Which copy the agent loads depends on the agent's own rules — remove the extra one to avoid ambiguity. Locations:",
       "symlinkedFrom": "In the primary dir {{primary}} this is a symlink; the real files live at {{target}}. Deleting only removes the symlink and leaves the shared real files untouched.",
+      "symlinkTargetCentral": "Central repo",
       "upload": "Adopt",
       "pull": "Pull",
       "removeManaged": "Remove from agent",
