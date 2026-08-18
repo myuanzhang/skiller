@@ -996,6 +996,8 @@ pub fn run() {
             commands::projects::update_project_skill_from_center,
             commands::projects::toggle_project_skill,
             commands::projects::delete_project_skill,
+            commands::projects::open_project_folder,
+            commands::projects::open_project_skill_dir,
             commands::projects::slugify_skill_names,
             // Agent local workspace
             commands::agent_workspace::get_global_local_skills,

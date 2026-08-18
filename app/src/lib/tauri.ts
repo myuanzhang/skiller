@@ -692,6 +692,12 @@ export const toggleProjectSkill = (projectId: string, skillRelativePath: string,
 export const deleteProjectSkill = (projectId: string, skillRelativePath: string, agent: string) =>
   invoke<void>("delete_project_skill", { projectId, skillRelativePath, agent });
 
+export const openProjectFolder = (projectId: string) =>
+  invoke<void>("open_project_folder", { projectId });
+
+export const openProjectSkillDir = (projectId: string, skillRelativePath: string, agent: string) =>
+  invoke<void>("open_project_skill_dir", { projectId, skillRelativePath, agent });
+
 export const slugifySkillNames = (names: string[]) =>
   invoke<string[]>("slugify_skill_names", { names });
 

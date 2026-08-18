@@ -488,6 +488,27 @@ export function ProjectDetail() {
     [selectedSkills]
   );
 
+  const openProjectFolder = useCallback(async () => {
+    if (!id) return;
+    try {
+      await api.openProjectFolder(id);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t("common.error")));
+    }
+  }, [id, t]);
+
+  const openSkillDir = useCallback(
+    async (variant: ProjectSkill) => {
+      if (!id) return;
+      try {
+        await api.openProjectSkillDir(id, variant.relative_path, variant.agent);
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, t("common.error")));
+      }
+    },
+    [id, t]
+  );
+
   const handleOpenDetail = async (skill: ProjectSkillGroup) => {
     setDetailSkill(skill);
     setDocContent(null);
@@ -833,9 +854,20 @@ export function ProjectDetail() {
               {project.name}
               <span className="app-badge">{groupedSkills.length}</span>
             </h1>
-            <p className="mt-1 truncate text-[12px] leading-5 text-muted" title={project.path}>
-              {project.path}
-              {groupedSkills.length > 0 && ` \u00B7 ${enabledCount} / ${groupedSkills.length} ${t("project.enabled")}`}
+            <p className="mt-1 flex items-center gap-1 text-[12px] leading-5 text-muted">
+              <button
+                type="button"
+                onClick={() => void openProjectFolder()}
+                title={t("globalWorkspace.localSkills.openDir")}
+                className="min-w-0 truncate rounded text-left transition-colors hover:text-secondary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+              >
+                {project.path}
+              </button>
+              {groupedSkills.length > 0 && (
+                <span className="shrink-0">
+                  {` \u00B7 ${enabledCount} / ${groupedSkills.length} ${t("project.enabled")}`}
+                </span>
+              )}
             </p>
           </div>
 
@@ -1168,6 +1200,13 @@ export function ProjectDetail() {
                               : null
                           }
                         />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); void openSkillDir(skill.primaryVariant); }}
+                          className="inline-flex shrink-0 items-center justify-center rounded-control p-1 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+                          title={t("globalWorkspace.localSkills.openDir")}
+                        >
+                          <FolderOpen className="h-3.5 w-3.5" />
+                        </button>
                         {canUpdateCenter && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleUpdateCenter(skill); }}
@@ -1314,6 +1353,13 @@ export function ProjectDetail() {
                 {!isMultiSelect && (
                   <>
                     <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); void openSkillDir(skill.primaryVariant); }}
+                        className="rounded p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+                        title={t("globalWorkspace.localSkills.openDir")}
+                      >
+                        <FolderOpen className="h-3.5 w-3.5" />
+                      </button>
                       {canUpdateCenter && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleUpdateCenter(skill); }}
@@ -1399,6 +1445,7 @@ export function ProjectDetail() {
           docLoading={docLoading}
           centerDocContent={centerDocContent}
           centerDocLoading={centerDocLoading}
+          onOpenSkillDir={() => void openSkillDir(detailSkill.primaryVariant)}
           onClose={() => setDetailSkill(null)}
         />
       )}
@@ -1464,6 +1511,7 @@ function ProjectSkillDetailPanel({
   docLoading,
   centerDocContent,
   centerDocLoading,
+  onOpenSkillDir,
   onClose,
 }: {
   skill: ProjectSkillGroup;
@@ -1474,6 +1522,7 @@ function ProjectSkillDetailPanel({
   docLoading: boolean;
   centerDocContent: string | null;
   centerDocLoading: boolean;
+  onOpenSkillDir: () => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -1524,10 +1573,15 @@ function ProjectSkillDetailPanel({
         )}
       </div>
       <div className="mt-3 flex items-center gap-4 text-[12.5px] text-muted">
-        <div className="flex min-w-0 items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onOpenSkillDir}
+          title={t("globalWorkspace.localSkills.openDir")}
+          className="flex min-w-0 items-center gap-1.5 rounded text-left transition-colors hover:text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+        >
           <FolderOpen className="h-3.5 w-3.5 shrink-0" />
-          <span className="font-mono truncate">{skill.primaryVariant.path}</span>
-        </div>
+          <span className="font-mono truncate hover:underline">{skill.primaryVariant.path}</span>
+        </button>
         {skill.files.length > 0 && (
           <div className="flex shrink-0 items-center gap-1.5">
             <FileText className="h-3.5 w-3.5" />

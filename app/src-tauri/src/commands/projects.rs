@@ -541,13 +541,6 @@ pub async fn add_project(
         if !project_path.is_dir() {
             return Err(AppError::invalid_input("Directory does not exist"));
         }
-        let claude_dir = project_path.join(".claude");
-        let skills_dir = claude_dir.join("skills");
-        let disabled_dir = claude_dir.join("skills-disabled");
-
-        // Support initializing an empty project directory as a managed project.
-        std::fs::create_dir_all(&skills_dir)?;
-        std::fs::create_dir_all(&disabled_dir)?;
 
         let name = project_path
             .file_name()
@@ -1112,6 +1105,85 @@ pub async fn toggle_project_skill(
     .await?
 }
 
+/// Open the project's root directory in the OS file browser.
+#[tauri::command]
+pub async fn open_project_folder(
+    store: State<'_, Arc<SkillStore>>,
+    project_id: String,
+) -> Result<(), AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let record = store
+            .get_project_by_id(&project_id)
+            .map_err(AppError::db)?
+            .ok_or_else(|| AppError::not_found("Workspace not found"))?;
+        let path = PathBuf::from(&record.path);
+        if !path.exists() {
+            return Err(AppError::io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Directory not found: {}", path.display()),
+            )));
+        }
+        tauri_plugin_opener::open_path(&path, Option::<&str>::None).map_err(|e| {
+            AppError::io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to open directory: {}", e),
+            ))
+        })?;
+        Ok(())
+    })
+    .await?
+}
+
+/// Open a specific skill's directory within the project's skills root in the
+/// OS file browser. The path is validated to live within the agent's enabled
+/// or disabled skills root for this workspace before opening.
+#[tauri::command]
+pub async fn open_project_skill_dir(
+    store: State<'_, Arc<SkillStore>>,
+    project_id: String,
+    skill_relative_path: String,
+    agent: String,
+) -> Result<(), AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        ensure_safe_skill_relative_path(&skill_relative_path)?;
+
+        let record = store
+            .get_project_by_id(&project_id)
+            .map_err(AppError::db)?
+            .ok_or_else(|| AppError::not_found("Workspace not found"))?;
+
+        let (skills_root, disabled_root) = resolve_agent_skills_roots(&store, &record, &agent)
+            .ok_or_else(|| AppError::not_found(format!("Unknown agent: {}", agent)))?;
+        let skills_dir = skills_root.join(&skill_relative_path);
+        let disabled_dir = disabled_root
+            .as_ref()
+            .map(|root| root.join(&skill_relative_path));
+
+        let (target, target_root) = if skills_dir.is_dir() {
+            (skills_dir, skills_root)
+        } else if let Some(disabled_dir) = disabled_dir.filter(|path| path.is_dir()) {
+            (
+                disabled_dir,
+                disabled_root.expect("present when disabled_dir exists"),
+            )
+        } else {
+            return Err(AppError::not_found("Skill directory not found"));
+        };
+
+        ensure_dir_within_root(&target, &target_root)?;
+        tauri_plugin_opener::open_path(&target, Option::<&str>::None).map_err(|e| {
+            AppError::io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to open directory: {}", e),
+            ))
+        })?;
+        Ok(())
+    })
+    .await?
+}
+
 #[tauri::command]
 pub async fn delete_project_skill(
     store: State<'_, Arc<SkillStore>>,
@@ -1148,6 +1220,21 @@ pub async fn delete_project_skill(
 
         ensure_dir_within_root(&target, &target_root)?;
         remove_workspace_skill_target(&target)?;
+
+        // For standard project workspaces, reclaim now-empty per-agent skill
+        // dirs (e.g. `.codex/skills/` and `.codex/`) so unassigning an agent
+        // leaves no empty scaffolding. Skipped for linked workspaces, where
+        // `target_root` IS the user's linked skills root and must not be
+        // removed. `cleanup_empty_dirs_up_to` only removes empty dirs, so
+        // sibling content (e.g. `skills-disabled/` still holding skills)
+        // stops the walk safely.
+        if record.workspace_type != "linked" {
+            if let (Some(parent), Some(agent_root)) =
+                (target.parent(), target_root.parent())
+            {
+                cleanup_empty_dirs_up_to(parent, agent_root);
+            }
+        }
         Ok(())
     })
     .await?
