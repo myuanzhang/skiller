@@ -18,6 +18,7 @@ import {
   Square,
   Plus,
   CircleSlash,
+  Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -41,7 +42,7 @@ import { getTagActiveColor, getTagColor, UNTAGGED_FILTER } from "../lib/skillTag
 import { syncStatusClass, type SyncStatusTone } from "../lib/statusPalette";
 import { cn } from "../utils";
 import * as api from "../lib/tauri";
-import type { ProjectSkill, ManagedSkill, ProjectAgentTarget } from "../lib/tauri";
+import type { ProjectSkill, ManagedSkill, ProjectAgentTarget, SkillUsageStat } from "../lib/tauri";
 import { getErrorMessage } from "../lib/error";
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
 
@@ -187,6 +188,9 @@ export function ProjectDetail() {
   const [deleteTarget, setDeleteTarget] = useState<ProjectSkillGroup | null>(null);
   const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
   const [batchTagDialogOpen, setBatchTagDialogOpen] = useState(false);
+  // Trigger counts keyed by skill name. Each project skill group sums the counts
+  // of the agents it's actually assigned to, mirroring the agent-workspace card.
+  const [usageStatsByName, setUsageStatsByName] = useState<Record<string, SkillUsageStat>>({});
   const PROJECT_ADD_CALLOUT_KEY = "skiller.projectAddCalloutDismissed";
   const [showAddCallout, setShowAddCallout] = useState(() => {
     try {
@@ -225,6 +229,21 @@ export function ProjectDetail() {
   useEffect(() => {
     loadSkills();
   }, [loadSkills]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getSkillUsageStats()
+      .then((stats) => {
+        if (cancelled) return;
+        setUsageStatsByName(Object.fromEntries(stats.map((stat) => [stat.skill_name, stat])));
+      })
+      .catch(() => {
+        if (!cancelled) setUsageStatsByName({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [skills]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1123,6 +1142,12 @@ export function ProjectDetail() {
               skill.status === "diverged";
             const statusMeta = getSyncStatusMeta(t, skill.status);
             const assignedAgents = getAssignedAgents(skill.variants);
+            const usageStat = usageStatsByName[skill.name];
+            const usageCount = usageStat
+              ? usageStat.agents
+                  .filter((a) => assignedAgents.includes(a.agent))
+                  .reduce((sum, a) => sum + a.count, 0)
+              : 0;
 
             if (viewMode === "grid") {
               return (
@@ -1148,6 +1173,15 @@ export function ProjectDetail() {
                     >
                       {skill.name}
                     </h3>
+                    {usageCount > 0 && (
+                      <span
+                        className="flex shrink-0 items-center gap-1 text-[12px] text-faint"
+                        title={t("mySkills.usage.count", { count: usageCount })}
+                      >
+                        <Zap className="h-3 w-3" />
+                        {usageCount}
+                      </span>
+                    )}
                     {skill.files.length > 0 && (
                       <span className="flex items-center gap-1 text-[12px] text-faint shrink-0">
                         <FileText className="w-3 h-3" />
@@ -1324,6 +1358,15 @@ export function ProjectDetail() {
                   {skill.enabledCount === 0 && (
                     <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[12px] font-medium text-red-600 dark:text-red-300">
                       {t("project.disabled")}
+                    </span>
+                  )}
+                  {usageCount > 0 && (
+                    <span
+                      className="flex items-center gap-1 text-[12px] text-faint"
+                      title={t("mySkills.usage.count", { count: usageCount })}
+                    >
+                      <Zap className="h-3 w-3" />
+                      {usageCount}
                     </span>
                   )}
                   {skill.files.length > 0 && (
