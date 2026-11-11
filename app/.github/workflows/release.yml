@@ -100,7 +100,7 @@ jobs:
           fi
           {
             echo "body<<EOF"
-            echo "## Skills Manager ${{ github.ref_name }}"
+            echo "## Skiller ${{ github.ref_name }}"
             echo ""
             echo "发布日期：\`${RELEASE_DATE}\`"
             echo "${RANGE_LINE}"
@@ -140,8 +140,6 @@ jobs:
         uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # Ad-hoc sign macOS bundles so Gatekeeper reports "unverified developer"
           # (dismissable via right-click → Open) instead of "app is damaged".
           # Without this, the linker-only signature has no sealed resources and
@@ -149,68 +147,20 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos') && '-' || '' }}
         with:
           tagName: v__VERSION__
-          releaseName: 'Skills Manager v__VERSION__'
+          releaseName: 'Skiller v__VERSION__'
           releaseBody: ${{ steps.changelog.outputs.body }}
           releaseDraft: false
           prerelease: false
-          updaterJsonKeepUniversal: true
           args: --target ${{ matrix.target }}
 
       - name: Verify macOS bundle signature
         if: startsWith(matrix.platform, 'macos')
         run: |
           set -euo pipefail
-          APP_PATH="src-tauri/target/${{ matrix.target }}/release/bundle/macos/skills-manager.app"
+          APP_PATH="src-tauri/target/${{ matrix.target }}/release/bundle/macos/skiller.app"
           if [ ! -d "$APP_PATH" ]; then
             echo "Expected app bundle not found at $APP_PATH" >&2
             exit 1
           fi
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           codesign -dvvv "$APP_PATH" 2>&1 | grep -E 'Signature|Sealed Resources|Identifier'
-
-  verify-updater-assets:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    name: Verify updater assets
-    steps:
-      - name: Validate updater metadata and signatures
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          api_url="https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}"
-          release_json=$(curl -fsSL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "$api_url")
-
-          asset_names=$(echo "$release_json" | jq -r '.assets[]?.name')
-
-          if ! echo "$asset_names" | grep -qx 'latest.json'; then
-            echo "Missing updater metadata asset: latest.json"
-            exit 1
-          fi
-
-          if ! echo "$asset_names" | grep -q '\.sig'; then
-            echo "Missing updater signature assets (*.sig)"
-            exit 1
-          fi
-
-          latest_url="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/latest.json"
-          curl -fsSL "$latest_url" >/tmp/latest.json
-
-          if ! jq -e 'has("platforms") and (.platforms | has("windows-x86_64"))' /tmp/latest.json >/dev/null; then
-            echo "latest.json does not include windows-x86_64 updater entry"
-            cat /tmp/latest.json
-            exit 1
-          fi
-
-          if ! jq -e '.platforms["windows-x86_64"].signature and .platforms["windows-x86_64"].url' /tmp/latest.json >/dev/null; then
-            echo "windows-x86_64 updater entry is missing signature/url"
-            cat /tmp/latest.json
-            exit 1
-          fi
-
-          echo "Updater assets validation passed"
