@@ -57,3 +57,21 @@ jobs:
           git commit -m "chore: bump version to ${VERSION}"
           git tag -a "v${VERSION}" -m "v${VERSION}"
           git push --follow-tags origin HEAD:main
+
+      # Tags pushed with GITHUB_TOKEN do not trigger the tag-push event, so
+      # start the build workflow explicitly via workflow_dispatch on the tag.
+      - name: Trigger Build & Release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./app/package.json').version")
+          for attempt in 1 2 3; do
+            if gh workflow run release.yml --ref "v${VERSION}"; then
+              echo "Build & Release dispatched on v${VERSION}"
+              exit 0
+            fi
+            echo "dispatch attempt ${attempt} failed, retrying..." >&2
+            sleep 5
+          done
+          exit 1
