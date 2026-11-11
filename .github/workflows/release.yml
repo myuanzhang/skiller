@@ -42,6 +42,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: app/package-lock.json
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
@@ -51,7 +52,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          workspaces: src-tauri
+          workspaces: app/src-tauri
           # Restore-only: the post-build cache *save* on Windows intermittently
           # fails (a lingering vctip.exe locks files in target/ while tar/zstd
           # packs the cache), marking an otherwise-successful release job red.
@@ -70,15 +71,17 @@ jobs:
             patchelf
 
       - name: Install frontend dependencies
+        working-directory: app
         run: npm ci
 
       - name: Windows smoke check
         if: matrix.platform == 'windows-latest'
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        run: cargo check --manifest-path app/src-tauri/Cargo.toml
 
       - name: Extract changelog for current version
         id: changelog
         shell: bash
+        working-directory: app
         run: |
           VERSION=$(node -p "require('./package.json').version")
           BODY_EN=$(sed -n "/^## \[${VERSION}\]/,/^## \[/{ /^## \[${VERSION}\]/d; /^## \[/d; p; }" CHANGELOG.md | awk -f scripts/strip-empty-sections.awk)
@@ -132,7 +135,7 @@ jobs:
             echo ""
             echo "${FULL_LINE}"
             echo ""
-            echo "Full changelog files: [English](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) | [中文](https://github.com/${{ github.repository }}/blob/main/CHANGELOG-zh.md)"
+            echo "Full changelog files: [English](https://github.com/${{ github.repository }}/blob/main/app/CHANGELOG.md) | [中文](https://github.com/${{ github.repository }}/blob/main/app/CHANGELOG-zh.md)"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 

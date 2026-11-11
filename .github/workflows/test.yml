@@ -40,12 +40,12 @@ jobs:
       - name: Cache Rust dependencies
         uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          workspaces: src-tauri
+          workspaces: app/src-tauri
 
       # cargo test needs no frontend build: tauri's generate_context only
       # reads the config, and beforeBuildCommand applies to `tauri build`.
       - name: Run tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+        run: cargo test --manifest-path app/src-tauri/Cargo.toml
 
       # vctip.exe (VC++ telemetry) lingers after cl.exe and locks files in
       # target/, which intermittently breaks the post-job cache save and
