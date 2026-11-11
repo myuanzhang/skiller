@@ -24,6 +24,32 @@
 - **Custom tools** — Add your own agents/tools with custom skills directories, or override the default path for any built-in tool.
 - **Git backup, snapshots & restore** — Version-control your skill library with Git for backup and multi-machine sync. Each sync can create a snapshot you can browse, restore, or delete later.
 
+## Screenshots
+
+**Dashboard** — Sync coverage, connected agents, project workspaces, and recent activity in one view.
+
+![Dashboard](../docs/screenshots/dashboard.png)
+
+**Skill Center** — Every skill in the central library, filterable by source, preset, and sync status, with batch operations and Git snapshots.
+
+![Skill Center](../docs/screenshots/my-skills.png)
+
+**Install Skills** — Browse the skills.sh marketplace rankings, or install from a local folder, `.zip` / `.skill` archive, or Git repo.
+
+![Install Skills](../docs/screenshots/install-skills.png)
+
+**All Agents** — An overview of every connected agent, with per-agent skill counts and status at a glance.
+
+![All Agents overview](../docs/screenshots/agent-workspace.png)
+
+**Agent workspace** — Every skill a single agent actually sees, with badges for read-only vendor skills, name collisions, and local-only state.
+
+![Agent workspace](../docs/screenshots/agent-detail.png)
+
+**Settings** — Enable or disable agents, customize per-agent and central-library skill directories, and add your own agents.
+
+![Settings](../docs/screenshots/settings.png)
+
 ## Tech Stack
 
 | Layer | Tech |
@@ -32,6 +58,13 @@
 | Frontend | React 19 + TypeScript + Vite + TailwindCSS |
 | Storage | SQLite |
 | CLI | `skiller-cli` (shares the same Rust core) |
+
+## Install
+
+No build needed for regular use: download the installer for your platform from [GitHub Releases](https://github.com/myuanzhang/skiller/releases) (`.dmg` for macOS, `.exe` / `.msi` for Windows, `.deb` / `.AppImage` for Linux).
+
+- On macOS, if Gatekeeper reports an unidentified developer, right-click the app and choose **Open** (builds are ad-hoc signed without an Apple Developer certificate).
+- See [docs/发布打包.md](../docs/发布打包.md) for the packaging and release flow.
 
 ## Development
 

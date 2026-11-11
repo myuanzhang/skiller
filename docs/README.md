@@ -33,8 +33,10 @@ updated: 2026-07-15
 ## 环境
 
 - [开发环境.md](开发环境.md) —— 本地构建、EPERM 绕过、产物路径、启动信号。
+- [发布打包.md](发布打包.md) —— `tauri build` 本机打安装包、GitHub Actions 四平台发布、用户下载与签名提示。
 
 ## 其它
 
+- `screenshots/` —— README 功能截图源文件（Dashboard、技能中心、安装、Agent 工作区、设置）。
 - `research/` —— 背景调研资料。
 - `archive/` —— 已完成的历史计划（UI 重构方案、superpowers plans/specs），冻结存档、不再维护。

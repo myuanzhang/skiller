@@ -24,6 +24,32 @@
 - **自定义工具** —— 添加自己的 Agent/工具及其 skill 目录，或覆盖任意内置工具的默认路径。
 - **Git 备份、快照与恢复** —— 用 Git 对技能库做版本管理，实现备份与多机同步。每次同步可生成快照，之后可浏览、恢复或删除。
 
+## 功能截图
+
+**Dashboard 总览** —— 同步覆盖率、已接入 Agent、项目工作区与近期动态一屏掌握。
+
+![Dashboard 总览](../docs/screenshots/dashboard.png)
+
+**技能中心** —— 中央库中的全部 skill，可按来源、Preset、同步状态筛选，支持批量操作与 Git 快照。
+
+![技能中心](../docs/screenshots/my-skills.png)
+
+**安装 Skills** —— 浏览 skills.sh 市场榜单，或从本地文件夹、`.zip` / `.skill` 归档、Git 仓库安装。
+
+![安装 Skills](../docs/screenshots/install-skills.png)
+
+**全部 Agents** —— 已接入 Agent 总览，每个 Agent 的 skill 数量与状态一目了然。
+
+![全部 Agents 总览](../docs/screenshots/agent-workspace.png)
+
+**Agent 工作区** —— 单个 Agent 实际可见的全部 skill；只读厂商 skill、重名条目、仅本地状态均有徽章标注。
+
+![Agent 工作区](../docs/screenshots/agent-detail.png)
+
+**设置** —— 启用 / 停用 Agent、自定义各 Agent 与中央仓库的 skill 目录、新增自定义 Agent。
+
+![设置](../docs/screenshots/settings.png)
+
 ## 技术栈
 
 | 层 | 技术 |
@@ -32,6 +58,13 @@
 | 前端 | React 19 + TypeScript + Vite + TailwindCSS |
 | 存储 | SQLite |
 | CLI | `skiller-cli`（与 GUI 共享同一 Rust core） |
+
+## 下载安装
+
+普通用户无需编译：到 [GitHub Releases](https://github.com/myuanzhang/skiller/releases) 下载对应平台安装包（macOS 为 `.dmg`，Windows 为 `.exe` / `.msi`，Linux 为 `.deb` / `.AppImage`）。
+
+- macOS 首次打开若提示无法验证开发者，右键 App →「打开」放行（当前为 ad-hoc 签名，未使用 Apple Developer 证书）。
+- 打包与发布流程见 [docs/发布打包.md](../docs/发布打包.md)。
 
 ## 开发
 
