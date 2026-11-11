@@ -217,7 +217,6 @@
       "available": "當前 Preset 未啟用"
     },
     "sourceType": "來源類型",
-    "sourceRef": "來源位置",
     "sourceResolved": "解析後來源",
     "sourceBranch": "分支",
     "sourceSubpath": "子路徑",
@@ -446,7 +445,7 @@
     "language": "語言",
     "help": "說明",
     "about": "關於",
-    "version": "Skiller 1.25.2",
+    "version": "Skiller 1.25.3",
     "tagline": "跨平台。極簡、高效、無感多 Preset 切換。",
     "checkUpdate": "檢查更新",
     "checking": "檢查中…",

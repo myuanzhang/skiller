@@ -4,6 +4,16 @@ All notable changes to Skiller are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and versions follow SemVer.
 The Chinese counterpart lives in [CHANGELOG-zh.md](./CHANGELOG-zh.md).
 
+## [1.25.3] - 2026-11-11
+
+### Release Overview
+- 
+
+### User-facing
+- 
+
+### Developer & Governance
+- 
 ## [1.25.2] - 2026-11-11
 
 ### Release Overview
