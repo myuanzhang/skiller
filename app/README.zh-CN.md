@@ -13,8 +13,9 @@
 - **统一技能库** —— 从 Git 仓库、本地文件夹、`.zip` / `.skill` 归档，或 [skills.sh](https://skills.sh) 市场安装 skill。所有 skill 汇入一个中央库，默认位于 `~/.skiller`，可在**设置**里自定义。
 - **广泛的 Agent 支持** —— 开箱支持 50+ 编码与个人 AI Agent：Claude Code、Codex、Cursor、TRAE IDE / TRAE CN、Gemini CLI、GitHub Copilot、OpenCode、Grok、Windsurf、Cline 等等。
 - **预设（Preset）** —— 把若干 skill 打包成命名预设。在任意工作区点击预设即可为当前 Agent 范围一键启用/停用其全部 skill。
-- **各 Agent 工作区** —— 每个 Agent 有独立页面，列出它实际能看到的所有 skill（包括不是通过 Skiller 安装的，以及经 `~/.agents/skills` 共享的）。skill 按真实来源目录分组并可筛选，跨 Agent 与软链接来的条目会带徽章标注。可按 Agent 增删，或用「全部 Agents」总览统一管理。
-- **项目工作区** —— 查看和管理各 Agent 的项目级 skill 目录，与中央库对比并双向同步。
+- **各 Agent 工作区** —— 每个 Agent 有独立页面，列出它实际能看到的所有 skill（包括不是通过 Skiller 安装的，以及经 `~/.agents/skills` 共享的）。skill 按真实来源目录分组并可筛选，跨 Agent 软链、指向中央仓库的软链（`↪ 中央仓库`）和只读条目各有徽章。可按 Agent 增删，或用「全部 Agents」总览统一管理。
+- **只读厂商 skill** —— 厂商托管的 skill 会带锁徽章展示：TRAE、Codex、Claude Code、Grok 自带的内置系统 skill 与插件/市场缓存都在此列。它们按厂商目录分组筛选（Codex 有两个独立只读根目录，分别标注）；后端有写守卫，禁止对它们同步、导入或删除，Skiller 不会改动或破坏厂商 bundle。
+- **项目工作区** —— 查看和管理各 Agent 的项目级 skill 目录，与中央库对比并双向同步。卡片显示 skill 在已分配 Agent 下的累计触发次数，所有路径可一键在访达中打开；移走某 Agent 的最后一个 skill 后，空出来的目录会自动回收，不留空壳文件夹。
 - **多工具同步** —— 一键将 skill 以软链或复制方式同步到任意受支持的工具。
 - **批量操作** —— 在技能中心或任意 Agent 视图多选 skill，批量启用/停用、编辑标签、删除，或（在 Agent 视图）从该 Agent 解除链接而保留中央库副本。
 - **标签与筛选** —— 给 skill 打标签，按来源、标签或同步状态筛选。
@@ -39,7 +40,8 @@
 ```bash
 cd app
 npm install
-export CARGO_TARGET_DIR="/tmp/skiller-target"   # 若构建报错，参考仓库 BUILD 说明
+export PATH="$HOME/.cargo/bin:$PATH"
+export CARGO_TARGET_DIR="/tmp/skiller-target"   # 本机需绕开构建限制
 npm run tauri:dev    # 启动桌面 GUI（开发模式）
 npm run cli -- --help # 运行 CLI
 ```
