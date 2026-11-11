@@ -13,8 +13,9 @@
 - **Unified skill library** — Install skills from Git repos, local folders, `.zip` / `.skill` archives, or the [skills.sh](https://skills.sh) marketplace. Everything goes into one central repo, which defaults to `~/.skiller` and can be customized in **Settings**.
 - **Broad agent support** — Works with 50+ coding and personal AI agents out of the box — Claude Code, Codex, Cursor, TRAE IDE / TRAE CN, Gemini CLI, GitHub Copilot, OpenCode, Grok, Windsurf, Cline, and many more.
 - **Presets** — Group skills into named presets. In any workspace, click a preset pill to instantly activate or deactivate all its skills for the current agent scope.
-- **Per-agent workspace** — Each agent gets its own page listing every skill it actually sees — including ones installed outside Skiller and ones shared via `~/.agents/skills`. Skills are grouped and filterable by their real source directory, with a badge marking cross-agent and symlinked entries. Add, remove, or delete skills per agent, or use the All Agents overview to manage every installed agent at once.
-- **Project workspaces** — View and manage project-local skill folders for supported agents, compare them with your central library, and sync changes in either direction.
+- **Per-agent workspace** — Each agent gets its own page listing every skill it actually sees — including ones installed outside Skiller and ones shared via `~/.agents/skills`. Skills are grouped and filterable by their real source directory, with badges marking cross-agent links, symlinks that resolve into your central repo ("↪ Central repo"), and read-only entries. Add, remove, or delete skills per agent, or use the All Agents overview to manage every installed agent at once.
+- **Read-only vendor skills** — Vendor-managed skills show up with a lock badge: the built-in system skills and plugin/marketplace caches shipped by TRAE, Codex, Claude Code, and Grok. They are grouped under per-directory filter chips — Codex has two distinct read-only roots, each labeled separately — and a backend write guard blocks sync, import, and delete on them, so vendor bundles can never be modified or broken by Skiller.
+- **Project workspaces** — View and manage project-local skill folders for supported agents, compare them with your central library, and sync changes in either direction. Cards show usage counts across the agents a skill is assigned to, every path opens its folder in Finder with one click, and empty per-agent folders are reclaimed automatically when you unassign the last skill.
 - **Multi-tool sync** — Sync skills to any supported tool via symlink or copy with a single click.
 - **Batch operations** — Multi-select skills in the Skill Center or any agent view for bulk enable/disable, tag editing, delete, or (per agent) unlinking from that agent while keeping the central copy.
 - **Skill tagging and filters** — Tag skills and filter by source, tag, or sync status.
@@ -39,7 +40,8 @@ Requires a Rust toolchain and Node.
 ```bash
 cd app
 npm install
-export CARGO_TARGET_DIR="/tmp/skiller-target"   # see the repo BUILD notes if you hit build errors
+export PATH="$HOME/.cargo/bin:$PATH"
+export CARGO_TARGET_DIR="/tmp/skiller-target"   # work around local build restrictions; see docs/开发环境.md
 npm run tauri:dev    # launch the desktop GUI (dev mode)
 npm run cli -- --help # run the CLI
 ```
