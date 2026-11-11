@@ -146,6 +146,7 @@ jobs:
           # `codesign --verify` fails. See issue #138.
           APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos') && '-' || '' }}
         with:
+          projectPath: app
           tagName: v__VERSION__
           releaseName: 'Skiller v__VERSION__'
           releaseBody: ${{ steps.changelog.outputs.body }}
@@ -157,7 +158,7 @@ jobs:
         if: startsWith(matrix.platform, 'macos')
         run: |
           set -euo pipefail
-          APP_PATH="src-tauri/target/${{ matrix.target }}/release/bundle/macos/skiller.app"
+          APP_PATH="app/src-tauri/target/${{ matrix.target }}/release/bundle/macos/skiller.app"
           if [ ! -d "$APP_PATH" ]; then
             echo "Expected app bundle not found at $APP_PATH" >&2
             exit 1
